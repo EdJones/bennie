@@ -13,7 +13,11 @@ const form = ref({
   districtId: '',
   districtName: '',
   schoolId: '',
-  schoolName: ''
+  schoolName: '',
+  elaSameCurriculum: null,
+  foundationsProvider: '',
+  foundationsProduct: '',
+  foundationsYear: ''
 })
 
 const states = ref([])
@@ -116,7 +120,11 @@ async function handleSubmit() {
       districtId: form.value.districtId,
       districtName: form.value.districtName,
       schoolId: form.value.schoolId,
-      schoolName: form.value.schoolName
+      schoolName: form.value.schoolName,
+      elaSameCurriculum: form.value.elaSameCurriculum,
+      foundationsProvider: form.value.elaSameCurriculum === false ? form.value.foundationsProvider : null,
+      foundationsProduct: form.value.elaSameCurriculum === false ? form.value.foundationsProduct : null,
+      foundationsYear: form.value.elaSameCurriculum === false ? form.value.foundationsYear : null
     }
 
     if (isEdit.value) {
@@ -188,6 +196,72 @@ async function handleSubmit() {
         </select>
       </div>
 
+      <section class="form-section">
+        <h2>ELA Curriculum</h2>
+
+        <div class="subsection">
+          <h3>Foundations</h3>
+
+          <div class="form-group">
+            <label class="question-label">
+              Does your school use the same curricular product for both foundational (phonics) instruction, and for the rest of the reading block?
+            </label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  v-model="form.elaSameCurriculum"
+                  :value="true"
+                  name="elaSameCurriculum"
+                />
+                <span>Yes</span>
+              </label>
+              <label class="radio-option">
+                <input
+                  type="radio"
+                  v-model="form.elaSameCurriculum"
+                  :value="false"
+                  name="elaSameCurriculum"
+                />
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="form.elaSameCurriculum === false" class="conditional-fields">
+            <div class="form-group">
+              <label for="foundationsProvider">Provider Name</label>
+              <input
+                id="foundationsProvider"
+                v-model="form.foundationsProvider"
+                type="text"
+                placeholder="e.g., Amplify, Wilson Learning"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="foundationsProduct">Product</label>
+              <input
+                id="foundationsProduct"
+                v-model="form.foundationsProduct"
+                type="text"
+                placeholder="e.g., CKLA Skills, Fundations"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="foundationsYear">Year</label>
+              <input
+                id="foundationsYear"
+                v-model="form.foundationsYear"
+                type="text"
+                placeholder="e.g., 2023"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" @click="router.push('/')">
           Cancel
@@ -202,7 +276,7 @@ async function handleSubmit() {
 
 <style scoped>
 .form-container {
-  max-width: 500px;
+  max-width: 600px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -281,5 +355,77 @@ button {
 
 .btn-secondary:hover {
   background-color: #d0d0d0;
+}
+
+.form-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.form-section h2 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+.subsection {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.subsection h3 {
+  margin: 0 0 1rem 0;
+  color: #555;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.question-label {
+  font-weight: 400;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.radio-group {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.radio-option input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.conditional-fields {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+input[type="text"]:focus {
+  outline: none;
+  border-color: #4a90a4;
+  box-shadow: 0 0 0 2px rgba(74, 144, 164, 0.2);
 }
 </style>
