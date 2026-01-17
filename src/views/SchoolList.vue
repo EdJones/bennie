@@ -64,8 +64,8 @@ onMounted(fetchSchools)
       <tbody>
         <tr v-for="school in schools" :key="school.id">
           <td>{{ school.state }}</td>
-          <td>{{ school.district }}</td>
-          <td>{{ school.school }}</td>
+          <td>{{ school.districtName }}</td>
+          <td>{{ school.schoolName }}</td>
           <td class="actions">
             <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
               Edit
