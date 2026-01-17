@@ -6,7 +6,10 @@
     <header>
       <div class="header-content">
         <img src="/bennie.png" alt="Bennie the school detective dog" class="logo" />
-        <h1>Bennie</h1>
+        <div class="header-text">
+          <h1>Bennie</h1>
+          <p class="subtitle">The National Survey of School ELA Curriculum Use</p>
+        </div>
       </div>
     </header>
     <main>
@@ -45,6 +48,13 @@ header h1 {
   font-weight: 700;
   font-size: 2.5rem;
   letter-spacing: 1px;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 1rem;
+  opacity: 0.9;
+  font-weight: 400;
 }
 
 main {
