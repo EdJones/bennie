@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { db } from '../firebase'
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getStates, getDistricts, getSchools } from '../services/nces'
+import { getProviderNames, getProductsForProvider } from '../data/providers'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,6 +24,8 @@ const form = ref({
 const states = ref([])
 const districts = ref([])
 const schools = ref([])
+const providers = getProviderNames()
+const availableProducts = computed(() => getProductsForProvider(form.value.foundationsProvider))
 
 const loading = ref(false)
 const loadingStates = ref(false)
@@ -110,6 +113,10 @@ watch(() => form.value.schoolId, (newSchoolId) => {
   if (!newSchoolId) return
   const school = schools.value.find(s => s.NCESSCH === newSchoolId)
   form.value.schoolName = school?.SCH_NAME || ''
+})
+
+watch(() => form.value.foundationsProvider, () => {
+  form.value.foundationsProduct = ''
 })
 
 async function handleSubmit() {
@@ -230,33 +237,53 @@ async function handleSubmit() {
 
           <div v-if="form.elaSameCurriculum === false" class="conditional-fields">
             <div class="form-group">
-              <label for="foundationsProvider">Provider Name</label>
-              <input
+              <label for="foundationsProvider">Provider</label>
+              <select
                 id="foundationsProvider"
                 v-model="form.foundationsProvider"
-                type="text"
-                placeholder="e.g., Amplify, Wilson Learning"
-              />
+              >
+                <option value="">Select a provider</option>
+                <option v-for="provider in providers" :key="provider" :value="provider">
+                  {{ provider }}
+                </option>
+              </select>
             </div>
 
             <div class="form-group">
               <label for="foundationsProduct">Product</label>
-              <input
+              <select
                 id="foundationsProduct"
                 v-model="form.foundationsProduct"
+                :disabled="!form.foundationsProvider || availableProducts.length === 0"
+              >
+                <option value="">
+                  {{ !form.foundationsProvider ? 'Select a provider first' : (availableProducts.length === 0 ? 'Enter product below' : 'Select a product') }}
+                </option>
+                <option v-for="product in availableProducts" :key="product" :value="product">
+                  {{ product }}
+                </option>
+              </select>
+              <input
+                v-if="form.foundationsProvider === 'Other' || (form.foundationsProvider && availableProducts.length === 0)"
+                v-model="form.foundationsProduct"
                 type="text"
-                placeholder="e.g., CKLA Skills, Fundations"
+                placeholder="Enter product name"
+                class="other-input"
               />
             </div>
 
             <div class="form-group">
-              <label for="foundationsYear">Year</label>
-              <input
+              <label for="foundationsYear">Publication Year</label>
+              <select
                 id="foundationsYear"
                 v-model="form.foundationsYear"
-                type="text"
-                placeholder="e.g., 2023"
-              />
+              >
+                <option value="">Select year</option>
+                <option v-for="year in [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015]" :key="year" :value="year.toString()">
+                  {{ year }}
+                </option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
         </div>
@@ -427,5 +454,9 @@ input[type="text"]:focus {
   outline: none;
   border-color: #4a90a4;
   box-shadow: 0 0 0 2px rgba(74, 144, 164, 0.2);
+}
+
+.other-input {
+  margin-top: 0.5rem;
 }
 </style>
