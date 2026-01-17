@@ -150,18 +150,21 @@ async function handleSubmit() {
 </script>
 
 <template>
+  <div class="intro-container">
+    <p class="intro-text">
+      Thank you for contributing to this essential work of improving reading instruction for ALL kids.
+      <br><br>With this
+      critical
+      information, teachers, leaders, and researchers can better zero in on exactly what works best for each child.
+    </p>
+  </div>
   <div class="form-container">
     <h1>{{ isEdit ? 'Edit' : 'Add' }} School</h1>
 
     <form @submit.prevent="handleSubmit">
       <div class="form-group">
         <label for="state">State</label>
-        <select
-          id="state"
-          v-model="form.state"
-          required
-          :disabled="loadingStates"
-        >
+        <select id="state" v-model="form.state" required :disabled="loadingStates">
           <option value="">{{ loadingStates ? 'Loading states...' : 'Select a state' }}</option>
           <option v-for="state in states" :key="state" :value="state">
             {{ state }}
@@ -171,14 +174,10 @@ async function handleSubmit() {
 
       <div class="form-group">
         <label for="district">District</label>
-        <select
-          id="district"
-          v-model="form.districtId"
-          required
-          :disabled="!form.state || loadingDistricts"
-        >
+        <select id="district" v-model="form.districtId" required :disabled="!form.state || loadingDistricts">
           <option value="">
-            {{ loadingDistricts ? 'Loading districts...' : (form.state ? 'Select a district' : 'Select a state first') }}
+            {{ loadingDistricts ? 'Loading districts...' : (form.state ? 'Select a district' : 'Select a state first')
+            }}
           </option>
           <option v-for="district in districts" :key="district.LEAID" :value="district.LEAID">
             {{ district.LEA_NAME }}
@@ -188,14 +187,10 @@ async function handleSubmit() {
 
       <div class="form-group">
         <label for="school">School</label>
-        <select
-          id="school"
-          v-model="form.schoolId"
-          required
-          :disabled="!form.districtId || loadingSchools"
-        >
+        <select id="school" v-model="form.schoolId" required :disabled="!form.districtId || loadingSchools">
           <option value="">
-            {{ loadingSchools ? 'Loading schools...' : (form.districtId ? 'Select a school' : 'Select a district first') }}
+            {{ loadingSchools ? 'Loading schools...' : (form.districtId ? 'Select a school' : 'Select a district first')
+            }}
           </option>
           <option v-for="school in schools" :key="school.NCESSCH" :value="school.NCESSCH">
             {{ school.SCH_NAME }}
@@ -211,25 +206,16 @@ async function handleSubmit() {
 
           <div class="form-group">
             <label class="question-label">
-              Does your school use the same curricular product for both foundational (phonics) instruction, and for the rest of the reading block?
+              Does your school use the same curricular product for both foundational (phonics) instruction, and for the
+              rest of the reading block?
             </label>
             <div class="radio-group">
               <label class="radio-option">
-                <input
-                  type="radio"
-                  v-model="form.elaSameCurriculum"
-                  :value="true"
-                  name="elaSameCurriculum"
-                />
+                <input type="radio" v-model="form.elaSameCurriculum" :value="true" name="elaSameCurriculum" />
                 <span>Yes</span>
               </label>
               <label class="radio-option">
-                <input
-                  type="radio"
-                  v-model="form.elaSameCurriculum"
-                  :value="false"
-                  name="elaSameCurriculum"
-                />
+                <input type="radio" v-model="form.elaSameCurriculum" :value="false" name="elaSameCurriculum" />
                 <span>No</span>
               </label>
             </div>
@@ -238,10 +224,7 @@ async function handleSubmit() {
           <div v-if="form.elaSameCurriculum === false" class="conditional-fields">
             <div class="form-group">
               <label for="foundationsProvider">Provider</label>
-              <select
-                id="foundationsProvider"
-                v-model="form.foundationsProvider"
-              >
+              <select id="foundationsProvider" v-model="form.foundationsProvider">
                 <option value="">Select a provider</option>
                 <option v-for="provider in providers" :key="provider" :value="provider">
                   {{ provider }}
@@ -251,35 +234,25 @@ async function handleSubmit() {
 
             <div class="form-group">
               <label for="foundationsProduct">Product</label>
-              <select
-                id="foundationsProduct"
-                v-model="form.foundationsProduct"
-                :disabled="!form.foundationsProvider || availableProducts.length === 0"
-              >
-                <option value="">
-                  {{ !form.foundationsProvider ? 'Select a provider first' : (availableProducts.length === 0 ? 'Enter product below' : 'Select a product') }}
-                </option>
+              <select id="foundationsProduct" v-model="form.foundationsProduct"
+                :disabled="!form.foundationsProvider || availableProducts.length === 0">
+                <option value="">{{ !form.foundationsProvider ? 'Select a provider first' : (availableProducts.length
+                  === 0 ? 'Enter product below' : 'Select a product') }}</option>
                 <option v-for="product in availableProducts" :key="product" :value="product">
                   {{ product }}
                 </option>
               </select>
               <input
                 v-if="form.foundationsProvider === 'Other' || (form.foundationsProvider && availableProducts.length === 0)"
-                v-model="form.foundationsProduct"
-                type="text"
-                placeholder="Enter product name"
-                class="other-input"
-              />
+                v-model="form.foundationsProduct" type="text" placeholder="Enter product name" class="other-input" />
             </div>
 
             <div class="form-group">
               <label for="foundationsYear">Publication Year</label>
-              <select
-                id="foundationsYear"
-                v-model="form.foundationsYear"
-              >
+              <select id="foundationsYear" v-model="form.foundationsYear">
                 <option value="">Select year</option>
-                <option v-for="year in [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015]" :key="year" :value="year.toString()">
+                <option v-for="year in [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015]" :key="year"
+                  :value="year.toString()">
                   {{ year }}
                 </option>
                 <option value="Other">Other</option>
@@ -302,6 +275,22 @@ async function handleSubmit() {
 </template>
 
 <style scoped>
+.intro-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem 2rem 0 2rem;
+}
+
+.intro-text {
+  color: #555;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0.5rem;
+  padding-left: 0rem;
+  background-color: #f0f7f4;
+
+}
+
 .form-container {
   max-width: 600px;
   margin: 0 auto;
