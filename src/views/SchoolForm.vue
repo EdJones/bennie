@@ -18,14 +18,18 @@ const form = ref({
   elaSameCurriculum: null,
   foundationsProvider: '',
   foundationsProduct: '',
-  foundationsYear: ''
+  foundationsYear: '',
+  generalElaProvider: '',
+  generalElaProduct: '',
+  generalElaYear: ''
 })
 
 const states = ref([])
 const districts = ref([])
 const schools = ref([])
 const providers = getProviderNames()
-const availableProducts = computed(() => getProductsForProvider(form.value.foundationsProvider))
+const availableFoundationsProducts = computed(() => getProductsForProvider(form.value.foundationsProvider))
+const availableGeneralElaProducts = computed(() => getProductsForProvider(form.value.generalElaProvider))
 
 const loading = ref(false)
 const loadingStates = ref(false)
@@ -119,6 +123,10 @@ watch(() => form.value.foundationsProvider, () => {
   form.value.foundationsProduct = ''
 })
 
+watch(() => form.value.generalElaProvider, () => {
+  form.value.generalElaProduct = ''
+})
+
 async function handleSubmit() {
   loading.value = true
   try {
@@ -131,7 +139,10 @@ async function handleSubmit() {
       elaSameCurriculum: form.value.elaSameCurriculum,
       foundationsProvider: form.value.elaSameCurriculum === false ? form.value.foundationsProvider : null,
       foundationsProduct: form.value.elaSameCurriculum === false ? form.value.foundationsProduct : null,
-      foundationsYear: form.value.elaSameCurriculum === false ? form.value.foundationsYear : null
+      foundationsYear: form.value.elaSameCurriculum === false ? form.value.foundationsYear : null,
+      generalElaProvider: form.value.generalElaProvider || null,
+      generalElaProduct: form.value.generalElaProduct || null,
+      generalElaYear: form.value.generalElaYear || null
     }
 
     if (isEdit.value) {
@@ -235,15 +246,15 @@ async function handleSubmit() {
             <div class="form-group">
               <label for="foundationsProduct">Product</label>
               <select id="foundationsProduct" v-model="form.foundationsProduct"
-                :disabled="!form.foundationsProvider || availableProducts.length === 0">
-                <option value="">{{ !form.foundationsProvider ? 'Select a provider first' : (availableProducts.length
+                :disabled="!form.foundationsProvider || availableFoundationsProducts.length === 0">
+                <option value="">{{ !form.foundationsProvider ? 'Select a provider first' : (availableFoundationsProducts.length
                   === 0 ? 'Enter product below' : 'Select a product') }}</option>
-                <option v-for="product in availableProducts" :key="product" :value="product">
+                <option v-for="product in availableFoundationsProducts" :key="product" :value="product">
                   {{ product }}
                 </option>
               </select>
               <input
-                v-if="form.foundationsProvider === 'Other' || (form.foundationsProvider && availableProducts.length === 0)"
+                v-if="form.foundationsProvider === 'Other' || (form.foundationsProvider && availableFoundationsProducts.length === 0)"
                 v-model="form.foundationsProduct" type="text" placeholder="Enter product name" class="other-input" />
             </div>
 
@@ -258,6 +269,46 @@ async function handleSubmit() {
                 <option value="Other">Other</option>
               </select>
             </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3>General, Comprehensive, or Knowledge-Building ELA Curriculum</h3>
+
+          <div class="form-group">
+            <label for="generalElaProvider">Provider</label>
+            <select id="generalElaProvider" v-model="form.generalElaProvider">
+              <option value="">Select a provider</option>
+              <option v-for="provider in providers" :key="provider" :value="provider">
+                {{ provider }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="generalElaProduct">Product</label>
+            <select id="generalElaProduct" v-model="form.generalElaProduct"
+              :disabled="!form.generalElaProvider || availableGeneralElaProducts.length === 0">
+              <option value="">{{ !form.generalElaProvider ? 'Select a provider first' : (availableGeneralElaProducts.length === 0 ? 'Enter product below' : 'Select a product') }}</option>
+              <option v-for="product in availableGeneralElaProducts" :key="product" :value="product">
+                {{ product }}
+              </option>
+            </select>
+            <input
+              v-if="form.generalElaProvider === 'Other' || (form.generalElaProvider && availableGeneralElaProducts.length === 0)"
+              v-model="form.generalElaProduct" type="text" placeholder="Enter product name" class="other-input" />
+          </div>
+
+          <div class="form-group">
+            <label for="generalElaYear">Publication Year</label>
+            <select id="generalElaYear" v-model="form.generalElaYear">
+              <option value="">Select year</option>
+              <option v-for="year in [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015]" :key="year"
+                :value="year.toString()">
+                {{ year }}
+              </option>
+              <option value="Other">Other</option>
+            </select>
           </div>
         </div>
       </section>
