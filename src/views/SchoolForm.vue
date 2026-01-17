@@ -21,7 +21,11 @@ const form = ref({
   foundationsYear: '',
   generalElaProvider: '',
   generalElaProduct: '',
-  generalElaYear: ''
+  generalElaYear: '',
+  trainingGeneralEla: null,
+  elaImplementationYear: '',
+  trainingScienceOfReading: null,
+  sorTrainingProgram: ''
 })
 
 const states = ref([])
@@ -30,6 +34,53 @@ const schools = ref([])
 const providers = getProviderNames()
 const availableFoundationsProducts = computed(() => getProductsForProvider(form.value.foundationsProvider))
 const availableGeneralElaProducts = computed(() => getProductsForProvider(form.value.generalElaProvider))
+
+const ceriPrograms = [
+  '95% Group',
+  'Academic Language Therapy Associates (ALTA)',
+  'AIM Institute for Learning and Research',
+  'ALLMemphis',
+  'Atlanta Speech School: Rollins Center for Language and Literacy',
+  'Bowman Educational Services',
+  'Brainspring',
+  'Chartwell Teaching Institution',
+  'Classmates Educational Group, Inc.',
+  'Consortium of Reading Excellence (CORE)',
+  'DC Reading Clinic',
+  'Dyslexia Association of Singapore (DAS) Academy',
+  'Dyslexia Training Institute',
+  'Edwards Orton-Gillingham, Inc.',
+  'Glean Education',
+  'Hamilton County Educational Service Center',
+  'Institute for Multisensory Education (IMSE)',
+  'Jemicy w/ Notre Dame of Maryland University',
+  'Keys to Literacy',
+  'Landmark Outreach',
+  'Lexercise / MindInformation Inc.',
+  'Lexia',
+  'Literacy How',
+  'LitLife, Inc.',
+  'MaxScholar LLC',
+  'May Center for Learning',
+  'Mayerson Academy',
+  'Memphis Literacy Institute',
+  'MGT Impact Solutions',
+  'National Institute for Learning Development (NILD)',
+  'Neuhaus Education Center',
+  'North Carolina Department of Public Instruction',
+  'Orton-Gillingham Academy',
+  'Orton-Gillingham International – Yoshimoto',
+  'Public Consulting Group',
+  'R.E.A.D. Redefined',
+  'Reading and Language Learning Center',
+  'Reed Charitable Foundation',
+  'Region 4 Education Service Center',
+  'Savannah Dyslexia',
+  'The Apple Group for Dyslexia',
+  'Valley Speech Language and Learning Center',
+  'Wilson Reading System (WRS)',
+  'Other'
+]
 
 const loading = ref(false)
 const loadingStates = ref(false)
@@ -142,7 +193,11 @@ async function handleSubmit() {
       foundationsYear: form.value.elaSameCurriculum === false ? form.value.foundationsYear : null,
       generalElaProvider: form.value.generalElaProvider || null,
       generalElaProduct: form.value.generalElaProduct || null,
-      generalElaYear: form.value.generalElaYear || null
+      generalElaYear: form.value.generalElaYear || null,
+      trainingGeneralEla: form.value.trainingGeneralEla,
+      elaImplementationYear: form.value.elaImplementationYear || null,
+      trainingScienceOfReading: form.value.trainingScienceOfReading,
+      sorTrainingProgram: form.value.trainingScienceOfReading === true ? form.value.sorTrainingProgram : null
     }
 
     if (isEdit.value) {
@@ -308,6 +363,70 @@ async function handleSubmit() {
                 {{ year }}
               </option>
               <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Training & Implementation</h2>
+
+        <div class="subsection">
+          <div class="form-group">
+            <label class="question-label">
+              Were most or all building teachers given specific training in implementing the general ELA curriculum product?
+            </label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" v-model="form.trainingGeneralEla" :value="true" name="trainingGeneralEla" />
+                <span>Yes</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" v-model="form.trainingGeneralEla" :value="false" name="trainingGeneralEla" />
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="elaImplementationYear" class="question-label">
+              What year was the current ELA curriculum first implemented?
+            </label>
+            <select id="elaImplementationYear" v-model="form.elaImplementationYear">
+              <option value="">Select year</option>
+              <option v-for="year in [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015]" :key="year"
+                :value="year.toString()">
+                {{ year }}
+              </option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="question-label">
+              Did most of the building teachers receive general training in the Science of Reading?
+            </label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" v-model="form.trainingScienceOfReading" :value="true" name="trainingScienceOfReading" />
+                <span>Yes</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" v-model="form.trainingScienceOfReading" :value="false" name="trainingScienceOfReading" />
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="form.trainingScienceOfReading === true" class="form-group conditional-fields">
+            <label for="sorTrainingProgram" class="question-label">
+              Which training did most receive?
+            </label>
+            <select id="sorTrainingProgram" v-model="form.sorTrainingProgram">
+              <option value="">Select a program</option>
+              <option v-for="program in ceriPrograms" :key="program" :value="program">
+                {{ program }}
+              </option>
             </select>
           </div>
         </div>
