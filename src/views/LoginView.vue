@@ -4,24 +4,53 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
-const { loginWithGoogle, loginWithGithub, loginWithMicrosoft } = useAuth()
+const { loginWithGoogle, loginWithEmail, signUpWithEmail } = useAuth()
 const error = ref('')
 const loggingIn = ref(false)
+const isSignUp = ref(false)
+const email = ref('')
+const password = ref('')
 
-async function handleLogin(provider) {
+async function handleGoogleLogin() {
   error.value = ''
   loggingIn.value = true
   try {
-    if (provider === 'google') {
-      await loginWithGoogle()
-    } else if (provider === 'github') {
-      await loginWithGithub()
-    } else if (provider === 'microsoft') {
-      await loginWithMicrosoft()
-    }
+    await loginWithGoogle()
     router.push('/')
   } catch (err) {
     error.value = err.message || 'Login failed. Please try again.'
+  }
+  loggingIn.value = false
+}
+
+async function handleEmailSubmit() {
+  error.value = ''
+  if (!email.value || !password.value) {
+    error.value = 'Please enter email and password.'
+    return
+  }
+  loggingIn.value = true
+  try {
+    if (isSignUp.value) {
+      await signUpWithEmail(email.value, password.value)
+    } else {
+      await loginWithEmail(email.value, password.value)
+    }
+    router.push('/')
+  } catch (err) {
+    if (err.code === 'auth/user-not-found') {
+      error.value = 'No account found with this email.'
+    } else if (err.code === 'auth/wrong-password') {
+      error.value = 'Incorrect password.'
+    } else if (err.code === 'auth/email-already-in-use') {
+      error.value = 'An account with this email already exists.'
+    } else if (err.code === 'auth/weak-password') {
+      error.value = 'Password should be at least 6 characters.'
+    } else if (err.code === 'auth/invalid-email') {
+      error.value = 'Please enter a valid email address.'
+    } else {
+      error.value = err.message || 'Login failed. Please try again.'
+    }
   }
   loggingIn.value = false
 }
@@ -30,15 +59,52 @@ async function handleLogin(provider) {
 <template>
   <div class="login-container">
     <div class="login-card">
-      <h2>Sign In</h2>
-      <p class="login-subtitle">Choose a provider to continue</p>
+      <h2>{{ isSignUp ? 'Create Account' : 'Sign In' }}</h2>
+      <p class="login-subtitle">{{ isSignUp ? 'Enter your details to create an account' : 'Choose how to sign in' }}</p>
 
       <div v-if="error" class="error-message">{{ error }}</div>
+
+      <form @submit.prevent="handleEmailSubmit" class="email-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            v-model="email"
+            placeholder="you@example.com"
+            :disabled="loggingIn"
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            v-model="password"
+            placeholder="Enter password"
+            :disabled="loggingIn"
+          />
+        </div>
+        <button type="submit" class="btn-primary" :disabled="loggingIn">
+          {{ loggingIn ? 'Please wait...' : (isSignUp ? 'Create Account' : 'Sign In') }}
+        </button>
+      </form>
+
+      <p class="toggle-mode">
+        {{ isSignUp ? 'Already have an account?' : "Don't have an account?" }}
+        <a href="#" @click.prevent="isSignUp = !isSignUp; error = ''">
+          {{ isSignUp ? 'Sign in' : 'Create one' }}
+        </a>
+      </p>
+
+      <div class="divider">
+        <span>or</span>
+      </div>
 
       <div class="provider-buttons">
         <button
           class="provider-btn google"
-          @click="handleLogin('google')"
+          @click="handleGoogleLogin"
           :disabled="loggingIn"
         >
           <svg viewBox="0 0 24 24" width="20" height="20">
@@ -48,31 +114,6 @@ async function handleLogin(provider) {
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
           <span>Continue with Google</span>
-        </button>
-
-        <button
-          class="provider-btn github"
-          @click="handleLogin('github')"
-          :disabled="loggingIn"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-          </svg>
-          <span>Continue with GitHub</span>
-        </button>
-
-        <button
-          class="provider-btn microsoft"
-          @click="handleLogin('microsoft')"
-          :disabled="loggingIn"
-        >
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="#F25022" d="M1 1h10v10H1z"/>
-            <path fill="#00A4EF" d="M1 13h10v10H1z"/>
-            <path fill="#7FBA00" d="M13 1h10v10H13z"/>
-            <path fill="#FFB900" d="M13 13h10v10H13z"/>
-          </svg>
-          <span>Continue with Microsoft</span>
         </button>
       </div>
     </div>
@@ -105,7 +146,7 @@ async function handleLogin(provider) {
 
 .login-subtitle {
   color: #666;
-  margin: 0 0 2rem 0;
+  margin: 0 0 1.5rem 0;
 }
 
 .error-message {
@@ -114,6 +155,91 @@ async function handleLogin(provider) {
   padding: 0.75rem;
   border-radius: 6px;
   margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.email-form {
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4a90a4;
+  box-shadow: 0 0 0 2px rgba(74, 144, 164, 0.2);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.875rem;
+  background-color: #4a90a4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #3a7a8a;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toggle-mode {
+  margin: 1rem 0;
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.toggle-mode a {
+  color: #4a90a4;
+  text-decoration: none;
+}
+
+.toggle-mode a:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 1.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #ddd;
+}
+
+.divider span {
+  padding: 0 1rem;
+  color: #999;
   font-size: 0.875rem;
 }
 
@@ -148,20 +274,6 @@ async function handleLogin(provider) {
 }
 
 .provider-btn.google {
-  color: #333;
-}
-
-.provider-btn.github {
-  background-color: #24292e;
-  color: white;
-  border-color: #24292e;
-}
-
-.provider-btn.github:hover:not(:disabled) {
-  background-color: #2f363d;
-}
-
-.provider-btn.microsoft {
   color: #333;
 }
 </style>

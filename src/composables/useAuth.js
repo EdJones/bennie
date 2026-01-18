@@ -1,6 +1,12 @@
 import { ref, computed } from 'vue'
-import { auth, googleProvider, githubProvider, microsoftProvider } from '../firebase'
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
+import { auth, googleProvider } from '../firebase'
+import {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth'
 
 const user = ref(null)
 const loading = ref(true)
@@ -9,7 +15,6 @@ let initialized = false
 const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(e => e)
 
 const isAdmin = computed(() => {
-  // Works for all auth providers (Google, GitHub, Microsoft) - checks email against admin list
   if (!user.value?.email) return false
   return adminEmails.includes(user.value.email.toLowerCase())
 })
@@ -35,20 +40,20 @@ export function useAuth() {
     }
   }
 
-  async function loginWithGithub() {
+  async function loginWithEmail(email, password) {
     try {
-      await signInWithPopup(auth, githubProvider)
+      await signInWithEmailAndPassword(auth, email, password)
     } catch (error) {
-      console.error('GitHub login error:', error)
+      console.error('Email login error:', error)
       throw error
     }
   }
 
-  async function loginWithMicrosoft() {
+  async function signUpWithEmail(email, password) {
     try {
-      await signInWithPopup(auth, microsoftProvider)
+      await createUserWithEmailAndPassword(auth, email, password)
     } catch (error) {
-      console.error('Microsoft login error:', error)
+      console.error('Email signup error:', error)
       throw error
     }
   }
@@ -67,8 +72,8 @@ export function useAuth() {
     loading,
     isAdmin,
     loginWithGoogle,
-    loginWithGithub,
-    loginWithMicrosoft,
+    loginWithEmail,
+    signUpWithEmail,
     logout
   }
 }
