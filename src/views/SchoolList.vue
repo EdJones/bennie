@@ -3,8 +3,10 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { db } from '../firebase'
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
+import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
+const { isAdmin } = useAuth()
 const schools = ref([])
 const loading = ref(true)
 
@@ -75,7 +77,7 @@ onMounted(fetchSchools)
                 <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
                   Edit
                 </button>
-                <button class="btn-delete" @click="deleteSchool(school.id)">
+                <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
                   Delete
                 </button>
               </td>

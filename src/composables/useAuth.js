@@ -1,10 +1,17 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { auth, googleProvider, githubProvider, microsoftProvider } from '../firebase'
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
 
 const user = ref(null)
 const loading = ref(true)
 let initialized = false
+
+const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+
+const isAdmin = computed(() => {
+  if (!user.value?.email) return false
+  return adminEmails.includes(user.value.email.toLowerCase())
+})
 
 function initAuth() {
   if (initialized) return
@@ -57,6 +64,7 @@ export function useAuth() {
   return {
     user,
     loading,
+    isAdmin,
     loginWithGoogle,
     loginWithGithub,
     loginWithMicrosoft,
