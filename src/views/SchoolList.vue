@@ -4,9 +4,10 @@ import { useRouter } from 'vue-router'
 import { db } from '../firebase'
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
 import { useAuth } from '../composables/useAuth'
+import { logSchoolDelete } from '../services/activityLog'
 
 const router = useRouter()
-const { isAdmin } = useAuth()
+const { user, isAdmin } = useAuth()
 const schools = ref([])
 const loading = ref(true)
 
@@ -27,8 +28,10 @@ async function fetchSchools() {
 async function deleteSchool(id) {
   if (!confirm('Are you sure you want to delete this entry?')) return
 
+  const school = schools.value.find(s => s.id === id)
   try {
     await deleteDoc(doc(db, 'schools', id))
+    await logSchoolDelete(user.value, id, school)
     schools.value = schools.value.filter(s => s.id !== id)
   } catch (error) {
     console.error('Error deleting:', error)

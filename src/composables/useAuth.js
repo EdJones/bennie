@@ -5,8 +5,10 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  getAdditionalUserInfo
 } from 'firebase/auth'
+import { logSignup } from '../services/activityLog'
 
 const user = ref(null)
 const loading = ref(true)
@@ -33,7 +35,11 @@ export function useAuth() {
 
   async function loginWithGoogle() {
     try {
-      await signInWithPopup(auth, googleProvider)
+      const result = await signInWithPopup(auth, googleProvider)
+      const additionalInfo = getAdditionalUserInfo(result)
+      if (additionalInfo?.isNewUser) {
+        await logSignup(result.user)
+      }
     } catch (error) {
       console.error('Google login error:', error)
       throw error
@@ -51,7 +57,8 @@ export function useAuth() {
 
   async function signUpWithEmail(email, password) {
     try {
-      await createUserWithEmailAndPassword(auth, email, password)
+      const result = await createUserWithEmailAndPassword(auth, email, password)
+      await logSignup(result.user)
     } catch (error) {
       console.error('Email signup error:', error)
       throw error

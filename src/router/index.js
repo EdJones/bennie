@@ -4,6 +4,7 @@ import SchoolList from '../views/SchoolList.vue'
 import SchoolForm from '../views/SchoolForm.vue'
 import SchoolView from '../views/SchoolView.vue'
 import LoginView from '../views/LoginView.vue'
+import AdminPanel from '../views/AdminPanel.vue'
 
 const routes = [
   {
@@ -35,6 +36,12 @@ const routes = [
     name: 'view',
     component: SchoolView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: AdminPanel,
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 

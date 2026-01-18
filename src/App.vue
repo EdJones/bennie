@@ -3,7 +3,7 @@ import { useAuth } from './composables/useAuth'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const { user, logout } = useAuth()
+const { user, isAdmin, logout } = useAuth()
 
 async function handleLogout() {
   await logout()
@@ -24,7 +24,8 @@ async function handleLogout() {
         </div>
         <div v-if="user" class="header-right">
           <span class="user-email">{{ user.email }}</span>
-          <button class="logout-btn" @click="handleLogout">Logout</button>
+          <button v-if="isAdmin" class="header-btn" @click="router.push('/admin')">Admin</button>
+          <button class="header-btn" @click="handleLogout">Logout</button>
         </div>
       </div>
     </header>
@@ -67,7 +68,7 @@ header {
   opacity: 0.9;
 }
 
-.logout-btn {
+.header-btn {
   background-color: rgba(255, 255, 255, 0.15);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -78,7 +79,7 @@ header {
   transition: background-color 0.2s;
 }
 
-.logout-btn:hover {
+.header-btn:hover {
   background-color: rgba(255, 255, 255, 0.25);
 }
 

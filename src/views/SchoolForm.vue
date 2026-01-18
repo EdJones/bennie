@@ -5,9 +5,12 @@ import { db } from '../firebase'
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getStates, getDistricts, getSchools } from '../services/nces'
 import { getProviderNames, getProductsForProvider } from '../data/providers'
+import { useAuth } from '../composables/useAuth'
+import { logSchoolCreate, logSchoolEdit } from '../services/activityLog'
 
 const route = useRoute()
 const router = useRouter()
+const { user } = useAuth()
 
 const form = ref({
   state: '',
@@ -232,9 +235,11 @@ async function handleSubmit() {
     if (isEdit.value) {
       const docRef = doc(db, 'schools', route.params.id)
       await updateDoc(docRef, dataToSave)
+      await logSchoolEdit(user.value, route.params.id, dataToSave)
       router.push('/')
     } else {
       const docRef = await addDoc(collection(db, 'schools'), dataToSave)
+      await logSchoolCreate(user.value, docRef.id, dataToSave)
       savedDocId.value = docRef.id
       saveSuccess.value = true
     }
