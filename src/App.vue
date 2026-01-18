@@ -1,14 +1,30 @@
 <script setup>
+import { useAuth } from './composables/useAuth'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const { user, logout } = useAuth()
+
+async function handleLogout() {
+  await logout()
+  router.push('/login')
+}
 </script>
 
 <template>
   <div id="app">
     <header>
       <div class="header-content">
-        <img src="/bennie.png" alt="Bennie the school detective dog" class="logo" />
-        <div class="header-text">
-          <h1>Bennie</h1>
-          <p class="subtitle">The National Survey of School Reading Curricula</p>
+        <div class="header-left">
+          <img src="/bennie.png" alt="Bennie the school detective dog" class="logo" />
+          <div class="header-text">
+            <h1>Bennie</h1>
+            <p class="subtitle">The National Survey of School Reading Curricula</p>
+          </div>
+        </div>
+        <div v-if="user" class="header-right">
+          <span class="user-email">{{ user.email }}</span>
+          <button class="logout-btn" @click="handleLogout">Logout</button>
         </div>
       </div>
     </header>
@@ -29,9 +45,41 @@ header {
 .header-content {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  justify-content: space-between;
   max-width: 900px;
   margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-email {
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.logout-btn {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 .logo {
