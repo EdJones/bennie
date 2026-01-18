@@ -9,6 +9,8 @@ const router = useRouter()
 const { isAdmin } = useAuth()
 const activities = ref([])
 const loading = ref(true)
+const totalSchools = ref(0)
+const totalUsers = ref(0)
 
 onMounted(async () => {
   if (!isAdmin.value) {
@@ -17,6 +19,15 @@ onMounted(async () => {
   }
 
   try {
+    // Fetch schools count
+    const schoolsSnapshot = await getDocs(collection(db, 'schools'))
+    totalSchools.value = schoolsSnapshot.size
+
+    // Fetch users count from users collection
+    const usersSnapshot = await getDocs(collection(db, 'users'))
+    totalUsers.value = usersSnapshot.size
+
+    // Fetch activity log
     const q = query(
       collection(db, 'activityLog'),
       orderBy('timestamp', 'desc'),
@@ -28,7 +39,7 @@ onMounted(async () => {
       ...doc.data()
     }))
   } catch (error) {
-    console.error('Error fetching activity log:', error)
+    console.error('Error fetching data:', error)
   }
   loading.value = false
 })
@@ -65,6 +76,17 @@ function getActivityClass(type) {
     <div class="header">
       <h1>Admin Panel</h1>
       <button class="btn-secondary" @click="router.push('/')">Back to List</button>
+    </div>
+
+    <div v-if="!loading" class="summary-section">
+      <div class="summary-card">
+        <div class="summary-value">{{ totalSchools }}</div>
+        <div class="summary-label">Total Schools</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-value">{{ totalUsers }}</div>
+        <div class="summary-label">Total Users</div>
+      </div>
     </div>
 
     <div v-if="loading" class="loading">Loading activity log...</div>
@@ -140,6 +162,35 @@ function getActivityClass(type) {
 
 .btn-secondary:hover {
   background-color: #d0d0d0;
+}
+
+.summary-section {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  flex: 1;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.summary-value {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.summary-label {
+  font-size: 0.875rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .loading, .empty {

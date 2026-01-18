@@ -1,5 +1,5 @@
 import { db } from '../firebase'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, setDoc, doc, serverTimestamp } from 'firebase/firestore'
 
 export async function logActivity(type, data) {
   try {
@@ -14,12 +14,21 @@ export async function logActivity(type, data) {
 }
 
 export async function logSignup(user) {
+  // Log signup activity
   await logActivity('signup', {
     userId: user.uid,
     email: user.email,
     displayName: user.displayName || null,
     provider: user.providerData?.[0]?.providerId || 'unknown'
   })
+
+  // Store user in users collection for counting (use setDoc to avoid duplicates)
+  await setDoc(doc(db, 'users', user.uid), {
+    email: user.email,
+    displayName: user.displayName || null,
+    provider: user.providerData?.[0]?.providerId || 'unknown',
+    createdAt: serverTimestamp()
+  }, { merge: true })
 }
 
 export async function logSchoolCreate(user, schoolId, schoolData) {
