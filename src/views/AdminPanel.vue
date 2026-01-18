@@ -1,18 +1,23 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { db } from '../firebase'
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
 import { useAuth } from '../composables/useAuth'
 
 const router = useRouter()
-const { isAdmin } = useAuth()
+const { isAdmin, loading: authLoading } = useAuth()
 const activities = ref([])
 const loading = ref(true)
 const totalSchools = ref(0)
 const totalUsers = ref(0)
+const dataLoaded = ref(false)
 
-onMounted(async () => {
+async function loadData() {
+  // Prevent double-loading
+  if (dataLoaded.value) return
+  dataLoaded.value = true
+
   if (!isAdmin.value) {
     router.push('/')
     return
@@ -42,7 +47,14 @@ onMounted(async () => {
     console.error('Error fetching data:', error)
   }
   loading.value = false
-})
+}
+
+// Wait for auth to load before checking admin status
+watch(authLoading, (newValue) => {
+  if (!newValue && !dataLoaded.value) {
+    loadData()
+  }
+}, { immediate: true })
 
 function formatDate(timestamp) {
   if (!timestamp) return '—'
