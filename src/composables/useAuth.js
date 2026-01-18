@@ -6,9 +6,10 @@ const user = ref(null)
 const loading = ref(true)
 let initialized = false
 
-const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase())
+const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(e => e)
 
 const isAdmin = computed(() => {
+  // Works for all auth providers (Google, GitHub, Microsoft) - checks email against admin list
   if (!user.value?.email) return false
   return adminEmails.includes(user.value.email.toLowerCase())
 })
