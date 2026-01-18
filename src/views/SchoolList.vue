@@ -39,55 +39,84 @@ onMounted(fetchSchools)
 
 <template>
   <div class="list-container">
-    <div class="header">
-      <h1>Schools</h1>
-      <button class="btn-primary" @click="router.push('/add')">
-        + Add New
-      </button>
+    <div class="content-wrapper">
+      <div class="list-section">
+        <div class="header">
+          <h1>Schools</h1>
+          <button class="btn-primary" @click="router.push('/add')">
+            + Add New
+          </button>
+        </div>
+
+        <div v-if="loading" class="loading">Loading...</div>
+
+        <div v-else-if="schools.length === 0" class="empty">
+          No schools added yet. Click "Add New" to get started.
+        </div>
+
+        <table v-else class="schools-table">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>District</th>
+              <th>School</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="school in schools" :key="school.id">
+              <td>{{ school.state }}</td>
+              <td>{{ school.districtName }}</td>
+              <td>{{ school.schoolName }}</td>
+              <td class="actions">
+                <button class="btn-view" @click="router.push(`/view/${school.id}`)">
+                  View
+                </button>
+                <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
+                  Edit
+                </button>
+                <button class="btn-delete" @click="deleteSchool(school.id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="image-section">
+        <img src="/bennie_large.png" alt="Bennie the school detective dog" class="bennie-large" />
+      </div>
     </div>
-
-    <div v-if="loading" class="loading">Loading...</div>
-
-    <div v-else-if="schools.length === 0" class="empty">
-      No schools added yet. Click "Add New" to get started.
-    </div>
-
-    <table v-else class="schools-table">
-      <thead>
-        <tr>
-          <th>State</th>
-          <th>District</th>
-          <th>School</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="school in schools" :key="school.id">
-          <td>{{ school.state }}</td>
-          <td>{{ school.districtName }}</td>
-          <td>{{ school.schoolName }}</td>
-          <td class="actions">
-            <button class="btn-view" @click="router.push(`/view/${school.id}`)">
-              View
-            </button>
-            <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
-              Edit
-            </button>
-            <button class="btn-delete" @click="deleteSchool(school.id)">
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 </template>
 
 <style scoped>
 .list-container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+}
+
+.content-wrapper {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.list-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.image-section {
+  flex-shrink: 0;
+}
+
+.bennie-large {
+  max-width: 300px;
+  height: auto;
+  border-radius: 8px;
 }
 
 .header {
@@ -116,7 +145,8 @@ h1 {
   background-color: #3a7a8a;
 }
 
-.loading, .empty {
+.loading,
+.empty {
   text-align: center;
   padding: 3rem;
   color: #666;
@@ -131,7 +161,8 @@ h1 {
   overflow: hidden;
 }
 
-th, td {
+th,
+td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #eee;
@@ -152,7 +183,9 @@ tr:hover {
   gap: 0.5rem;
 }
 
-.btn-view, .btn-edit, .btn-delete {
+.btn-view,
+.btn-edit,
+.btn-delete {
   padding: 0.4rem 0.8rem;
   border: none;
   border-radius: 4px;
