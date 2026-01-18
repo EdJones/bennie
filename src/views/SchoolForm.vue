@@ -96,6 +96,7 @@ const loadingSchools = ref(false)
 const isEdit = ref(false)
 const saveSuccess = ref(false)
 const savedDocId = ref(null)
+const initializing = ref(false)
 
 const additionalProductTypeOptions = [
   'Assessment/screening tools',
@@ -119,26 +120,30 @@ onMounted(async () => {
 
   if (route.params.id) {
     isEdit.value = true
+    initializing.value = true
     loading.value = true
     const docRef = doc(db, 'schools', route.params.id)
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) {
       const data = docSnap.data()
-      form.value = data
 
-      // Load districts and schools for editing
+      // Load districts and schools for editing before setting form data
       if (data.state) {
         districts.value = await getDistricts(data.state)
       }
       if (data.districtId) {
         schools.value = await getSchools(data.districtId)
       }
+
+      form.value = data
     }
     loading.value = false
+    initializing.value = false
   }
 })
 
 watch(() => form.value.state, async (newState) => {
+  if (initializing.value) return
   if (!newState) {
     districts.value = []
     schools.value = []
@@ -162,6 +167,7 @@ watch(() => form.value.state, async (newState) => {
 })
 
 watch(() => form.value.districtId, async (newDistrictId) => {
+  if (initializing.value) return
   if (!newDistrictId) {
     schools.value = []
     return
@@ -185,16 +191,19 @@ watch(() => form.value.districtId, async (newDistrictId) => {
 })
 
 watch(() => form.value.schoolId, (newSchoolId) => {
+  if (initializing.value) return
   if (!newSchoolId) return
   const school = schools.value.find(s => s.NCESSCH === newSchoolId)
   form.value.schoolName = school?.SCH_NAME || ''
 })
 
 watch(() => form.value.foundationsProvider, () => {
+  if (initializing.value) return
   form.value.foundationsProduct = ''
 })
 
 watch(() => form.value.generalElaProvider, () => {
+  if (initializing.value) return
   form.value.generalElaProduct = ''
 })
 
