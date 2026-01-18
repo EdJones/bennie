@@ -25,7 +25,9 @@ const form = ref({
   trainingGeneralEla: null,
   elaImplementationYear: '',
   trainingScienceOfReading: null,
-  sorTrainingProgram: ''
+  sorTrainingProgram: '',
+  additionalProducts: null,
+  additionalProductTypes: []
 })
 
 const states = ref([])
@@ -35,11 +37,12 @@ const providers = getProviderNames()
 const availableFoundationsProducts = computed(() => getProductsForProvider(form.value.foundationsProvider))
 const availableGeneralElaProducts = computed(() => getProductsForProvider(form.value.generalElaProvider))
 
-const ceriPrograms = [
+const trainingPrograms = [
   '95% Group',
   'Academic Language Therapy Associates (ALTA)',
   'AIM Institute for Learning and Research',
   'ALLMemphis',
+  'Ashlock Consulting, Inc.',
   'Atlanta Speech School: Rollins Center for Language and Literacy',
   'Bowman Educational Services',
   'Brainspring',
@@ -53,13 +56,17 @@ const ceriPrograms = [
   'Glean Education',
   'Hamilton County Educational Service Center',
   'Institute for Multisensory Education (IMSE)',
+  'International Multisensory Structured Language Education Council (IMSLEC)',
   'Jemicy w/ Notre Dame of Maryland University',
   'Keys to Literacy',
   'Landmark Outreach',
+  'Learning MATTERS, Ltd.',
+  'LETRS',
   'Lexercise / MindInformation Inc.',
   'Lexia',
   'Literacy How',
   'LitLife, Inc.',
+  'Maharashtra Dyslexia Association',
   'MaxScholar LLC',
   'May Center for Learning',
   'Mayerson Academy',
@@ -87,6 +94,19 @@ const loadingStates = ref(false)
 const loadingDistricts = ref(false)
 const loadingSchools = ref(false)
 const isEdit = ref(false)
+const saveSuccess = ref(false)
+const savedDocId = ref(null)
+
+const additionalProductTypeOptions = [
+  'Assessment/screening tools',
+  'Intervention programs',
+  'Decodable readers',
+  'Supplemental phonics materials',
+  'Vocabulary programs',
+  'Writing programs',
+  'Digital/technology tools',
+  'Other'
+]
 
 onMounted(async () => {
   loadingStates.value = true
@@ -203,20 +223,38 @@ async function handleSubmit() {
     if (isEdit.value) {
       const docRef = doc(db, 'schools', route.params.id)
       await updateDoc(docRef, dataToSave)
+      router.push('/')
     } else {
-      await addDoc(collection(db, 'schools'), dataToSave)
+      const docRef = await addDoc(collection(db, 'schools'), dataToSave)
+      savedDocId.value = docRef.id
+      saveSuccess.value = true
     }
-    router.push('/')
   } catch (error) {
     console.error('Error saving:', error)
     alert('Error saving data')
   }
   loading.value = false
 }
+
+async function saveAdditionalInfo() {
+  loading.value = true
+  try {
+    const docRef = doc(db, 'schools', savedDocId.value)
+    await updateDoc(docRef, {
+      additionalProducts: form.value.additionalProducts,
+      additionalProductTypes: form.value.additionalProducts ? form.value.additionalProductTypes : []
+    })
+    router.push('/')
+  } catch (error) {
+    console.error('Error saving additional info:', error)
+    alert('Error saving additional info')
+  }
+  loading.value = false
+}
 </script>
 
 <template>
-  <div class="intro-container">
+  <div v-if="!saveSuccess" class="intro-container">
     <p class="intro-text">
       Thank you for contributing to this essential work of improving reading instruction for ALL kids.
       <br><br>With this
@@ -225,9 +263,9 @@ async function handleSubmit() {
     </p>
   </div>
   <div class="form-container">
-    <h1>{{ isEdit ? 'Edit' : 'Add' }} School</h1>
+    <h1 v-if="!saveSuccess">{{ isEdit ? 'Edit' : 'Add' }} School</h1>
 
-    <form @submit.prevent="handleSubmit">
+    <form v-if="!saveSuccess" @submit.prevent="handleSubmit">
       <div class="form-group">
         <label for="state">State</label>
         <select id="state" v-model="form.state" required :disabled="loadingStates">
@@ -424,7 +462,7 @@ async function handleSubmit() {
             </label>
             <select id="sorTrainingProgram" v-model="form.sorTrainingProgram">
               <option value="">Select a program</option>
-              <option v-for="program in ceriPrograms" :key="program" :value="program">
+              <option v-for="program in trainingPrograms" :key="program" :value="program">
                 {{ program }}
               </option>
             </select>
@@ -441,6 +479,61 @@ async function handleSubmit() {
         </button>
       </div>
     </form>
+
+    <section v-if="saveSuccess" class="form-section success-section">
+      <h2>Thank You!</h2>
+      <p class="success-message">
+        Your school has been saved. Additional info would really help more teachers succeed:
+      </p>
+
+      <div class="subsection">
+        <div class="form-group">
+          <label class="question-label">
+            Does your school use any additional literacy products beyond the core ELA curriculum?
+          </label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" v-model="form.additionalProducts" :value="true" name="additionalProducts" />
+              <span>Yes</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" v-model="form.additionalProducts" :value="false" name="additionalProducts" />
+              <span>No</span>
+            </label>
+          </div>
+        </div>
+
+        <div v-if="form.additionalProducts === true" class="form-group conditional-fields">
+          <label class="question-label">
+            What types of additional products are used? (Select all that apply)
+          </label>
+          <div class="checkbox-group">
+            <label class="checkbox-option" v-for="productType in additionalProductTypeOptions" :key="productType">
+              <input
+                type="checkbox"
+                :value="productType"
+                v-model="form.additionalProductTypes"
+              />
+              <span>{{ productType }}</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" @click="router.push('/')">
+          Skip
+        </button>
+        <button
+          type="button"
+          class="btn-primary"
+          :disabled="loading || form.additionalProducts === null"
+          @click="saveAdditionalInfo"
+        >
+          {{ loading ? 'Saving...' : 'Save & Finish' }}
+        </button>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -617,5 +710,41 @@ input[type="text"]:focus {
 
 .other-input {
   margin-top: 0.5rem;
+}
+
+.success-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.success-message {
+  color: #2e7d32;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  padding: 1rem;
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkbox-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.checkbox-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 </style>
