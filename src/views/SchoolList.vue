@@ -67,6 +67,9 @@ onMounted(fetchSchools)
           <td>{{ school.districtName }}</td>
           <td>{{ school.schoolName }}</td>
           <td class="actions">
+            <button class="btn-view" @click="router.push(`/view/${school.id}`)">
+              View
+            </button>
             <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
               Edit
             </button>
@@ -149,12 +152,21 @@ tr:hover {
   gap: 0.5rem;
 }
 
-.btn-edit, .btn-delete {
+.btn-view, .btn-edit, .btn-delete {
   padding: 0.4rem 0.8rem;
   border: none;
   border-radius: 4px;
   font-size: 0.875rem;
   cursor: pointer;
+}
+
+.btn-view {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.btn-view:hover {
+  background-color: #c8e6c9;
 }
 
 .btn-edit {

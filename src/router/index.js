@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import SchoolList from '../views/SchoolList.vue'
 import SchoolForm from '../views/SchoolForm.vue'
+import SchoolView from '../views/SchoolView.vue'
 
 const routes = [
   {
@@ -17,6 +18,11 @@ const routes = [
     path: '/edit/:id',
     name: 'edit',
     component: SchoolForm
+  },
+  {
+    path: '/view/:id',
+    name: 'view',
+    component: SchoolView
   }
 ]
 
