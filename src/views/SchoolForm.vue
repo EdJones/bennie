@@ -109,6 +109,7 @@ const savedDocId = ref(null)
 const initializing = ref(false)
 const initialFormData = ref(null)
 const isFormSaved = ref(false)
+const initialSaveComplete = ref(false)
 
 const additionalProductTypeOptions = [
   'Assessment/screening tools',
@@ -308,65 +309,75 @@ watch(() => form.value.generalElaProvider, () => {
 async function handleSubmit() {
   loading.value = true
   try {
-    const dataToSave = {
-      state: form.value.state,
-      districtId: form.value.districtId,
-      districtName: form.value.districtName,
-      schoolId: form.value.schoolId,
-      schoolName: form.value.schoolName,
-      elaSameCurriculum: form.value.elaSameCurriculum,
-      foundationsProvider: form.value.elaSameCurriculum === false ? form.value.foundationsProvider : null,
-      foundationsProduct: form.value.elaSameCurriculum === false ? form.value.foundationsProduct : null,
-      foundationsYear: form.value.elaSameCurriculum === false ? form.value.foundationsYear : null,
-      generalElaProvider: form.value.generalElaProvider || null,
-      generalElaProduct: form.value.generalElaProduct || null,
-      generalElaYear: form.value.generalElaYear || null,
-      trainingGeneralEla: form.value.trainingGeneralEla,
-      elaImplementationYear: form.value.elaImplementationYear || null,
-      trainingScienceOfReading: form.value.trainingScienceOfReading,
-      sorTrainingProgram: form.value.trainingScienceOfReading === true ? form.value.sorTrainingProgram : null,
-      usesProgressMonitoring: form.value.usesProgressMonitoring,
-      progressMonitoringTools: form.value.usesProgressMonitoring === true ? form.value.progressMonitoringTools : [],
-      progressMonitoringFrequency: form.value.usesProgressMonitoring === true ? form.value.progressMonitoringFrequency : null,
-      usesDiagnosticAssessments: form.value.usesDiagnosticAssessments,
-      diagnosticAssessmentTools: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentTools : [],
-      diagnosticAssessmentFrequency: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentFrequency : null,
-      additionalInformation: form.value.additionalInformation || null
-    }
+    // First save: just school info and ELA curriculum
+    if (!initialSaveComplete.value && !isEdit.value) {
+      const dataToSave = {
+        state: form.value.state,
+        districtId: form.value.districtId,
+        districtName: form.value.districtName,
+        schoolId: form.value.schoolId,
+        schoolName: form.value.schoolName,
+        elaSameCurriculum: form.value.elaSameCurriculum,
+        foundationsProvider: form.value.elaSameCurriculum === false ? form.value.foundationsProvider : null,
+        foundationsProduct: form.value.elaSameCurriculum === false ? form.value.foundationsProduct : null,
+        foundationsYear: form.value.elaSameCurriculum === false ? form.value.foundationsYear : null,
+        generalElaProvider: form.value.generalElaProvider || null,
+        generalElaProduct: form.value.generalElaProduct || null,
+        generalElaYear: form.value.generalElaYear || null
+      }
 
-    if (isEdit.value) {
-      const docRef = doc(db, 'schools', route.params.id)
-      await updateDoc(docRef, dataToSave)
-      await logSchoolEdit(user.value, route.params.id, dataToSave)
-      isFormSaved.value = true
-      router.push('/')
-    } else {
       const docRef = await addDoc(collection(db, 'schools'), dataToSave)
       await logSchoolCreate(user.value, docRef.id, dataToSave)
       savedDocId.value = docRef.id
-      isFormSaved.value = true
-      saveSuccess.value = true
+      initialSaveComplete.value = true
+      initialFormData.value = deepClone(form.value)
+      window.scrollTo(0, 0)
+    } else {
+      // Second save or edit: save all fields
+      const dataToSave = {
+        state: form.value.state,
+        districtId: form.value.districtId,
+        districtName: form.value.districtName,
+        schoolId: form.value.schoolId,
+        schoolName: form.value.schoolName,
+        elaSameCurriculum: form.value.elaSameCurriculum,
+        foundationsProvider: form.value.elaSameCurriculum === false ? form.value.foundationsProvider : null,
+        foundationsProduct: form.value.elaSameCurriculum === false ? form.value.foundationsProduct : null,
+        foundationsYear: form.value.elaSameCurriculum === false ? form.value.foundationsYear : null,
+        generalElaProvider: form.value.generalElaProvider || null,
+        generalElaProduct: form.value.generalElaProduct || null,
+        generalElaYear: form.value.generalElaYear || null,
+        trainingGeneralEla: form.value.trainingGeneralEla,
+        elaImplementationYear: form.value.elaImplementationYear || null,
+        trainingScienceOfReading: form.value.trainingScienceOfReading,
+        sorTrainingProgram: form.value.trainingScienceOfReading === true ? form.value.sorTrainingProgram : null,
+        usesProgressMonitoring: form.value.usesProgressMonitoring,
+        progressMonitoringTools: form.value.usesProgressMonitoring === true ? form.value.progressMonitoringTools : [],
+        progressMonitoringFrequency: form.value.usesProgressMonitoring === true ? form.value.progressMonitoringFrequency : null,
+        usesDiagnosticAssessments: form.value.usesDiagnosticAssessments,
+        diagnosticAssessmentTools: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentTools : [],
+        diagnosticAssessmentFrequency: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentFrequency : null,
+        additionalProducts: form.value.additionalProducts,
+        additionalProductTypes: form.value.additionalProducts === true ? form.value.additionalProductTypes : [],
+        additionalInformation: form.value.additionalInformation || null
+      }
+
+      if (isEdit.value) {
+        const docRef = doc(db, 'schools', route.params.id)
+        await updateDoc(docRef, dataToSave)
+        await logSchoolEdit(user.value, route.params.id, dataToSave)
+        isFormSaved.value = true
+        router.push('/')
+      } else {
+        const docRef = doc(db, 'schools', savedDocId.value)
+        await updateDoc(docRef, dataToSave)
+        isFormSaved.value = true
+        saveSuccess.value = true
+      }
     }
   } catch (error) {
     console.error('Error saving:', error)
     alert('Error saving data')
-  }
-  loading.value = false
-}
-
-async function saveAdditionalInfo() {
-  loading.value = true
-  try {
-    const docRef = doc(db, 'schools', savedDocId.value)
-    await updateDoc(docRef, {
-      additionalProducts: form.value.additionalProducts,
-      additionalProductTypes: form.value.additionalProducts ? form.value.additionalProductTypes : []
-    })
-    isFormSaved.value = true
-    router.push('/')
-  } catch (error) {
-    console.error('Error saving additional info:', error)
-    alert('Error saving additional info')
   }
   loading.value = false
 }
@@ -385,25 +396,26 @@ function handleCancel() {
   }
 }
 
-function handleSkip() {
-  isFormSaved.value = true
-  router.push('/')
-}
 </script>
 
 <template>
   <div v-if="!saveSuccess" class="intro-container">
-    <p class="intro-text">
+    <p v-if="!initialSaveComplete" class="intro-text">
       Thank you for contributing to this essential work of improving reading instruction for ALL kids.
       <br><br>With this
       critical
       information, teachers, leaders, and researchers can better zero in on exactly what works best for each child.
     </p>
+    <p v-else class="intro-text">
+      Tremendous. Teachers and researchers can make even better use of this if they have more info on how it's implemented.
+    </p>
   </div>
   <div class="form-container">
-    <h1 v-if="!saveSuccess">{{ isEdit ? 'Edit' : 'Add' }} School</h1>
+    <h1 v-if="!saveSuccess">{{ isEdit ? 'Edit School' : (initialSaveComplete ? 'Implementation' : 'Add School') }}</h1>
 
     <form v-if="!saveSuccess" @submit.prevent="handleSubmit">
+      <!-- Step 1: School Info and ELA Curriculum -->
+      <div v-if="!initialSaveComplete || isEdit">
       <div class="form-group">
         <label for="state">State</label>
         <select id="state" v-model="form.state" required :disabled="loadingStates">
@@ -543,7 +555,10 @@ function handleSkip() {
           </div>
         </div>
       </section>
+      </div>
 
+      <!-- Step 2: Training, Progress Monitoring, Additional Info (shown after initial save or during edit) -->
+      <div v-if="initialSaveComplete || isEdit">
       <section class="form-section">
         <h2>Training & Implementation</h2>
 
@@ -713,6 +728,43 @@ function handleSkip() {
       </section>
 
       <section class="form-section">
+        <h2>Supplemental Materials</h2>
+        <div class="subsection">
+          <div class="form-group">
+            <label class="question-label">
+              Does your school use any additional literacy products beyond the core ELA curriculum?
+            </label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" v-model="form.additionalProducts" :value="true" name="additionalProducts" />
+                <span>Yes</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" v-model="form.additionalProducts" :value="false" name="additionalProducts" />
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="form.additionalProducts === true" class="form-group conditional-fields">
+            <label class="question-label">
+              What types of additional products are used? (Select all that apply)
+            </label>
+            <div class="checkbox-group">
+              <label class="checkbox-option" v-for="productType in additionalProductTypeOptions" :key="productType">
+                <input
+                  type="checkbox"
+                  :value="productType"
+                  v-model="form.additionalProductTypes"
+                />
+                <span>{{ productType }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
         <h2>Additional Information</h2>
         <div class="form-group">
           <label for="additionalInformation" class="question-label">
@@ -727,6 +779,7 @@ function handleSkip() {
           ></textarea>
         </div>
       </section>
+      </div>
 
       <div class="form-actions">
         <button type="button" class="btn-secondary" @click="handleCancel">
@@ -748,54 +801,12 @@ function handleSkip() {
     <section v-if="saveSuccess" class="form-section success-section">
       <h2>Thank You!</h2>
       <p class="success-message">
-        Your school has been saved. Additional info would really help more teachers succeed:
+        Your school has been saved. Thank you for contributing to this essential work of improving reading instruction for ALL kids.
       </p>
 
-      <div class="subsection">
-        <div class="form-group">
-          <label class="question-label">
-            Does your school use any additional literacy products beyond the core ELA curriculum?
-          </label>
-          <div class="radio-group">
-            <label class="radio-option">
-              <input type="radio" v-model="form.additionalProducts" :value="true" name="additionalProducts" />
-              <span>Yes</span>
-            </label>
-            <label class="radio-option">
-              <input type="radio" v-model="form.additionalProducts" :value="false" name="additionalProducts" />
-              <span>No</span>
-            </label>
-          </div>
-        </div>
-
-        <div v-if="form.additionalProducts === true" class="form-group conditional-fields">
-          <label class="question-label">
-            What types of additional products are used? (Select all that apply)
-          </label>
-          <div class="checkbox-group">
-            <label class="checkbox-option" v-for="productType in additionalProductTypeOptions" :key="productType">
-              <input
-                type="checkbox"
-                :value="productType"
-                v-model="form.additionalProductTypes"
-              />
-              <span>{{ productType }}</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
       <div class="form-actions">
-        <button type="button" class="btn-secondary" @click="handleSkip">
-          Skip
-        </button>
-        <button
-          type="button"
-          class="btn-primary"
-          :disabled="loading || form.additionalProducts === null"
-          @click="saveAdditionalInfo"
-        >
-          {{ loading ? 'Saving...' : 'Save & Finish' }}
+        <button type="button" class="btn-primary" @click="router.push('/')">
+          Done
         </button>
       </div>
 
