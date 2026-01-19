@@ -24,6 +24,7 @@ async function handleLogout() {
         </div>
         <div v-if="user" class="header-right">
           <span class="user-email">{{ user.email }}</span>
+          <button class="header-btn" @click="router.push('/issues')">Issues</button>
           <button v-if="isAdmin" class="header-btn" @click="router.push('/admin')">Admin</button>
           <button class="header-btn" @click="handleLogout">Logout</button>
         </div>
