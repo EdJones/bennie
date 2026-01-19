@@ -36,7 +36,8 @@ const form = ref({
   progressMonitoringFrequency: '',
   usesDiagnosticAssessments: null,
   diagnosticAssessmentTools: [],
-  diagnosticAssessmentFrequency: ''
+  diagnosticAssessmentFrequency: '',
+  additionalInformation: ''
 })
 
 const states = ref([])
@@ -273,7 +274,8 @@ async function handleSubmit() {
       progressMonitoringFrequency: form.value.usesProgressMonitoring === true ? form.value.progressMonitoringFrequency : null,
       usesDiagnosticAssessments: form.value.usesDiagnosticAssessments,
       diagnosticAssessmentTools: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentTools : [],
-      diagnosticAssessmentFrequency: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentFrequency : null
+      diagnosticAssessmentFrequency: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentFrequency : null,
+      additionalInformation: form.value.additionalInformation || null
     }
 
     if (isEdit.value) {
@@ -632,6 +634,22 @@ async function saveAdditionalInfo() {
         </div>
       </section>
 
+      <section class="form-section">
+        <h2>Additional Information</h2>
+        <div class="form-group">
+          <label for="additionalInformation" class="question-label">
+            Is there anything else you'd like to share about your school's reading instruction or assessment practices?
+          </label>
+          <textarea
+            id="additionalInformation"
+            v-model="form.additionalInformation"
+            rows="6"
+            placeholder="Enter any additional information..."
+            class="textarea-input"
+          ></textarea>
+        </div>
+      </section>
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" @click="router.push('/')">
           Cancel
@@ -872,6 +890,28 @@ input[type="text"]:focus {
 
 .other-input {
   margin-top: 0.5rem;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 120px;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #4a90a4;
+  box-shadow: 0 0 0 2px rgba(74, 144, 164, 0.2);
+}
+
+.textarea-input {
+  width: 100%;
 }
 
 .success-section {

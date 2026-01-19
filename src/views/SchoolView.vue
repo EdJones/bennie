@@ -158,6 +158,11 @@ function formatBoolean(value) {
           </template>
         </dl>
       </div>
+
+      <div v-if="school.additionalInformation" class="info-card">
+        <h2>Additional Information</h2>
+        <p class="additional-info-text">{{ school.additionalInformation }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -276,5 +281,13 @@ function formatBoolean(value) {
 
 .product-list li {
   margin-bottom: 0.25rem;
+}
+
+.additional-info-text {
+  margin: 0;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 </style>
