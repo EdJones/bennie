@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { db } from '../firebase'
 import { collection, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getStates, getDistricts, getSchools } from '../services/nces'
@@ -107,6 +107,8 @@ const isEdit = ref(false)
 const saveSuccess = ref(false)
 const savedDocId = ref(null)
 const initializing = ref(false)
+const initialFormData = ref(null)
+const isFormSaved = ref(false)
 
 const additionalProductTypeOptions = [
   'Assessment/screening tools',
@@ -151,6 +153,31 @@ const assessmentFrequencyOptions = [
   'Other'
 ]
 
+// Helper function to deep clone an object
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj))
+}
+
+// Check if form has unsaved changes
+function hasUnsavedChanges() {
+  if (isFormSaved.value) return false
+  if (!initialFormData.value) {
+    // For new forms, check if any required field is filled
+    return !!(form.value.state || form.value.districtId || form.value.schoolId)
+  }
+  // Deep comparison of form data
+  return JSON.stringify(form.value) !== JSON.stringify(initialFormData.value)
+}
+
+// Handle browser beforeunload event
+function handleBeforeUnload(event) {
+  if (hasUnsavedChanges() && !saveSuccess.value) {
+    event.preventDefault()
+    event.returnValue = ''
+    return ''
+  }
+}
+
 onMounted(async () => {
   loadingStates.value = true
   try {
@@ -178,9 +205,38 @@ onMounted(async () => {
       }
 
       form.value = data
+      // Store initial form data for comparison
+      initialFormData.value = deepClone(form.value)
     }
     loading.value = false
     initializing.value = false
+  } else {
+    // For new forms, store empty initial state
+    initialFormData.value = deepClone(form.value)
+  }
+
+  // Add beforeunload event listener
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  // Remove beforeunload event listener
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
+// Navigation guard for route changes
+onBeforeRouteLeave((to, from, next) => {
+  if (hasUnsavedChanges() && !saveSuccess.value) {
+    const answer = window.confirm(
+      'You have unsaved changes. Are you sure you want to leave? Your changes will be lost.'
+    )
+    if (answer) {
+      next()
+    } else {
+      next(false)
+    }
+  } else {
+    next()
   }
 })
 
@@ -282,11 +338,13 @@ async function handleSubmit() {
       const docRef = doc(db, 'schools', route.params.id)
       await updateDoc(docRef, dataToSave)
       await logSchoolEdit(user.value, route.params.id, dataToSave)
+      isFormSaved.value = true
       router.push('/')
     } else {
       const docRef = await addDoc(collection(db, 'schools'), dataToSave)
       await logSchoolCreate(user.value, docRef.id, dataToSave)
       savedDocId.value = docRef.id
+      isFormSaved.value = true
       saveSuccess.value = true
     }
   } catch (error) {
@@ -304,12 +362,32 @@ async function saveAdditionalInfo() {
       additionalProducts: form.value.additionalProducts,
       additionalProductTypes: form.value.additionalProducts ? form.value.additionalProductTypes : []
     })
+    isFormSaved.value = true
     router.push('/')
   } catch (error) {
     console.error('Error saving additional info:', error)
     alert('Error saving additional info')
   }
   loading.value = false
+}
+
+function handleCancel() {
+  if (hasUnsavedChanges()) {
+    const answer = window.confirm(
+      'You have unsaved changes. Are you sure you want to cancel? Your changes will be lost.'
+    )
+    if (answer) {
+      isFormSaved.value = true
+      router.push('/')
+    }
+  } else {
+    router.push('/')
+  }
+}
+
+function handleSkip() {
+  isFormSaved.value = true
+  router.push('/')
 }
 </script>
 
@@ -651,7 +729,7 @@ async function saveAdditionalInfo() {
       </section>
 
       <div class="form-actions">
-        <button type="button" class="btn-secondary" @click="router.push('/')">
+        <button type="button" class="btn-secondary" @click="handleCancel">
           Cancel
         </button>
         <button type="submit" class="btn-primary" :disabled="loading">
@@ -708,7 +786,7 @@ async function saveAdditionalInfo() {
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn-secondary" @click="router.push('/')">
+        <button type="button" class="btn-secondary" @click="handleSkip">
           Skip
         </button>
         <button
