@@ -103,6 +103,46 @@ function formatBoolean(value) {
         </dl>
       </div>
 
+      <div class="info-card">
+        <h2>Progress Monitoring & Diagnostic Assessments</h2>
+
+        <h3>Progress Monitoring</h3>
+        <dl class="info-grid">
+          <dt>Uses progress monitoring tools?</dt>
+          <dd>{{ formatBoolean(school.usesProgressMonitoring) }}</dd>
+          <template v-if="school.usesProgressMonitoring === true">
+            <template v-if="school.progressMonitoringTools?.length">
+              <dt>Progress Monitoring Tools</dt>
+              <dd>
+                <ul class="product-list">
+                  <li v-for="tool in school.progressMonitoringTools" :key="tool">{{ tool }}</li>
+                </ul>
+              </dd>
+            </template>
+            <dt>Assessment Frequency</dt>
+            <dd>{{ school.progressMonitoringFrequency || '—' }}</dd>
+          </template>
+        </dl>
+
+        <h3>Diagnostic Assessments</h3>
+        <dl class="info-grid">
+          <dt>Uses diagnostic assessments?</dt>
+          <dd>{{ formatBoolean(school.usesDiagnosticAssessments) }}</dd>
+          <template v-if="school.usesDiagnosticAssessments === true">
+            <template v-if="school.diagnosticAssessmentTools?.length">
+              <dt>Diagnostic Assessment Tools</dt>
+              <dd>
+                <ul class="product-list">
+                  <li v-for="tool in school.diagnosticAssessmentTools" :key="tool">{{ tool }}</li>
+                </ul>
+              </dd>
+            </template>
+            <dt>Assessment Frequency</dt>
+            <dd>{{ school.diagnosticAssessmentFrequency || '—' }}</dd>
+          </template>
+        </dl>
+      </div>
+
       <div v-if="school.additionalProducts !== null" class="info-card">
         <h2>Additional Products</h2>
         <dl class="info-grid">

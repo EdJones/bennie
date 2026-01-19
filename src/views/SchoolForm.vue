@@ -30,7 +30,13 @@ const form = ref({
   trainingScienceOfReading: null,
   sorTrainingProgram: '',
   additionalProducts: null,
-  additionalProductTypes: []
+  additionalProductTypes: [],
+  usesProgressMonitoring: null,
+  progressMonitoringTools: [],
+  progressMonitoringFrequency: '',
+  usesDiagnosticAssessments: null,
+  diagnosticAssessmentTools: [],
+  diagnosticAssessmentFrequency: ''
 })
 
 const states = ref([])
@@ -109,6 +115,38 @@ const additionalProductTypeOptions = [
   'Vocabulary programs',
   'Writing programs',
   'Digital/technology tools',
+  'Other'
+]
+
+const progressMonitoringToolOptions = [
+  'AIMSweb',
+  'DIBELS',
+  'FastBridge',
+  'i-Ready',
+  'MAP Growth',
+  'STAR Reading',
+  'Other'
+]
+
+const diagnosticAssessmentToolOptions = [
+  'Brigance',
+  'Comprehensive Test of Phonological Processing (CTOPP)',
+  'Diagnostic Assessment of Reading (DAR)',
+  'GORT (Gray Oral Reading Test)',
+  'PAL-II (Process Assessment of the Learner)',
+  'Phonological Awareness Literacy Screening (PALS)',
+  'Test of Word Reading Efficiency (TOWRE)',
+  'WADE (Wilson Assessment of Decoding and Encoding)',
+  'WJ IV (Woodcock-Johnson IV)',
+  'Other'
+]
+
+const assessmentFrequencyOptions = [
+  'Weekly',
+  'Bi-weekly',
+  'Monthly',
+  'Quarterly',
+  'Beginning/Middle/End of year',
   'Other'
 ]
 
@@ -229,7 +267,13 @@ async function handleSubmit() {
       trainingGeneralEla: form.value.trainingGeneralEla,
       elaImplementationYear: form.value.elaImplementationYear || null,
       trainingScienceOfReading: form.value.trainingScienceOfReading,
-      sorTrainingProgram: form.value.trainingScienceOfReading === true ? form.value.sorTrainingProgram : null
+      sorTrainingProgram: form.value.trainingScienceOfReading === true ? form.value.sorTrainingProgram : null,
+      usesProgressMonitoring: form.value.usesProgressMonitoring,
+      progressMonitoringTools: form.value.usesProgressMonitoring === true ? form.value.progressMonitoringTools : [],
+      progressMonitoringFrequency: form.value.usesProgressMonitoring === true ? form.value.progressMonitoringFrequency : null,
+      usesDiagnosticAssessments: form.value.usesDiagnosticAssessments,
+      diagnosticAssessmentTools: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentTools : [],
+      diagnosticAssessmentFrequency: form.value.usesDiagnosticAssessments === true ? form.value.diagnosticAssessmentFrequency : null
     }
 
     if (isEdit.value) {
@@ -480,6 +524,110 @@ async function saveAdditionalInfo() {
                 {{ program }}
               </option>
             </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section">
+        <h2>Progress Monitoring & Diagnostic Assessments</h2>
+
+        <div class="subsection">
+          <h3>Progress Monitoring</h3>
+
+          <div class="form-group">
+            <label class="question-label">
+              Does your school use progress monitoring tools to track student reading progress?
+            </label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" v-model="form.usesProgressMonitoring" :value="true" name="usesProgressMonitoring" />
+                <span>Yes</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" v-model="form.usesProgressMonitoring" :value="false" name="usesProgressMonitoring" />
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="form.usesProgressMonitoring === true" class="conditional-fields">
+            <div class="form-group">
+              <label class="question-label">
+                Which progress monitoring tools are used? (Select all that apply)
+              </label>
+              <div class="checkbox-group">
+                <label class="checkbox-option" v-for="tool in progressMonitoringToolOptions" :key="tool">
+                  <input
+                    type="checkbox"
+                    :value="tool"
+                    v-model="form.progressMonitoringTools"
+                  />
+                  <span>{{ tool }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="progressMonitoringFrequency" class="question-label">
+                How frequently are progress monitoring assessments administered?
+              </label>
+              <select id="progressMonitoringFrequency" v-model="form.progressMonitoringFrequency">
+                <option value="">Select frequency</option>
+                <option v-for="frequency in assessmentFrequencyOptions" :key="frequency" :value="frequency">
+                  {{ frequency }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3>Diagnostic Assessments</h3>
+
+          <div class="form-group">
+            <label class="question-label">
+              Does your school use diagnostic assessments to identify specific reading needs?
+            </label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" v-model="form.usesDiagnosticAssessments" :value="true" name="usesDiagnosticAssessments" />
+                <span>Yes</span>
+              </label>
+              <label class="radio-option">
+                <input type="radio" v-model="form.usesDiagnosticAssessments" :value="false" name="usesDiagnosticAssessments" />
+                <span>No</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="form.usesDiagnosticAssessments === true" class="conditional-fields">
+            <div class="form-group">
+              <label class="question-label">
+                Which diagnostic assessment tools are used? (Select all that apply)
+              </label>
+              <div class="checkbox-group">
+                <label class="checkbox-option" v-for="tool in diagnosticAssessmentToolOptions" :key="tool">
+                  <input
+                    type="checkbox"
+                    :value="tool"
+                    v-model="form.diagnosticAssessmentTools"
+                  />
+                  <span>{{ tool }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="diagnosticAssessmentFrequency" class="question-label">
+                How frequently are diagnostic assessments administered?
+              </label>
+              <select id="diagnosticAssessmentFrequency" v-model="form.diagnosticAssessmentFrequency">
+                <option value="">Select frequency</option>
+                <option v-for="frequency in assessmentFrequencyOptions" :key="frequency" :value="frequency">
+                  {{ frequency }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
       </section>
