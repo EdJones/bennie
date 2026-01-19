@@ -658,6 +658,13 @@ async function saveAdditionalInfo() {
           {{ loading ? 'Saving...' : (isEdit ? 'Update' : 'Save') }}
         </button>
       </div>
+
+      <div class="create-issue-section">
+        <p class="create-issue-text">Or, create an issue for the team.</p>
+        <button type="button" class="btn-secondary" @click="router.push('/issues')">
+          Issues
+        </button>
+      </div>
     </form>
 
     <section v-if="saveSuccess" class="form-section success-section">
@@ -711,6 +718,13 @@ async function saveAdditionalInfo() {
           @click="saveAdditionalInfo"
         >
           {{ loading ? 'Saving...' : 'Save & Finish' }}
+        </button>
+      </div>
+
+      <div class="create-issue-section">
+        <p class="create-issue-text">Or, create an issue for the team.</p>
+        <button type="button" class="btn-secondary" @click="router.push('/issues')">
+          Issues
         </button>
       </div>
     </section>
@@ -948,5 +962,21 @@ textarea:focus {
   width: 18px;
   height: 18px;
   cursor: pointer;
+}
+
+.create-issue-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.create-issue-text {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
 }
 </style>
