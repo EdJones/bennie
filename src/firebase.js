@@ -22,11 +22,11 @@ if (import.meta.env.DEV) {
   const missing = Object.entries(firebaseConfig)
     .filter(([key, value]) => !value)
     .map(([key]) => key)
-  
+
   if (missing.length > 0) {
     console.warn('Missing Firebase config values:', missing)
   }
-  
+
   // Check for newlines in critical values
   if (firebaseConfig.authDomain && firebaseConfig.authDomain.includes('\n')) {
     console.warn('authDomain contains newlines! This will cause iframe errors.')

@@ -205,7 +205,8 @@ function getActivityClass(type) {
   letter-spacing: 0.5px;
 }
 
-.loading, .empty {
+.loading,
+.empty {
   text-align: center;
   padding: 3rem;
   color: #666;
