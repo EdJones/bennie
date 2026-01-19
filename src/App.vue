@@ -18,7 +18,7 @@ async function handleLogout() {
         <div class="header-left">
           <img src="/bennie.png" alt="Bennie the school detective dog" class="logo" />
           <div class="header-text">
-            <h1>Bennie</h1>
+            <h1>Bennett</h1>
             <p class="subtitle">The National Survey of School Reading Curricula</p>
           </div>
         </div>
