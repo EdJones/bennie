@@ -44,54 +44,51 @@ onMounted(fetchSchools)
 
 <template>
   <div class="list-container">
-    <div class="content-wrapper">
-      <div class="list-section">
-        <div class="header">
+    <div class="list-section">
+      <div class="header">
+        <div class="header-left">
           <h1>Schools</h1>
           <button class="btn-primary" @click="router.push('/add')">
             + Add New
           </button>
         </div>
-
-        <div v-if="loading" class="loading">Loading...</div>
-
-        <div v-else-if="schools.length === 0" class="empty">
-          No schools added yet. Click "Add New" to get started.
-        </div>
-
-        <table v-else class="schools-table">
-          <thead>
-            <tr>
-              <th>State</th>
-              <th>District</th>
-              <th>School</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="school in schools" :key="school.id">
-              <td>{{ school.state }}</td>
-              <td>{{ school.districtName }}</td>
-              <td>{{ school.schoolName }}</td>
-              <td class="actions">
-                <button class="btn-view" @click="router.push(`/view/${school.id}`)">
-                  View
-                </button>
-                <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
-                  Edit
-                </button>
-                <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
-                  Delete
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="image-section">
         <img src="/bennie_large.png" alt="Bennie the school detective dog" class="bennie-large" />
       </div>
+
+      <div v-if="loading" class="loading">Loading...</div>
+
+      <div v-else-if="schools.length === 0" class="empty">
+        No schools added yet. Click "Add New" to get started.
+      </div>
+
+      <table v-else class="schools-table">
+        <thead>
+          <tr>
+            <th>State</th>
+            <th>District</th>
+            <th>School</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="school in schools" :key="school.id">
+            <td>{{ school.state }}</td>
+            <td>{{ school.districtName }}</td>
+            <td>{{ school.schoolName }}</td>
+            <td class="actions">
+              <button class="btn-view" @click="router.push(`/view/${school.id}`)">
+                View
+              </button>
+              <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
+                Edit
+              </button>
+              <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
+                Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
@@ -103,45 +100,38 @@ onMounted(fetchSchools)
   padding: 2rem;
 }
 
-.content-wrapper {
-  display: flex;
-  gap: 2rem;
-  align-items: flex-start;
-}
-
 .list-section {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
 }
 
-.image-section {
-  flex-shrink: 0;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+  gap: 1.5rem;
+  position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  align-self: flex-end;
 }
 
 .bennie-large {
-  max-width: 300px;
-  width: 100%;
+  max-width: 400px;
+  width: auto;
   height: auto;
   border-radius: 8px;
+  flex-shrink: 0;
+  margin-top: -2rem;
+  align-self: flex-start;
 }
 
 @media (max-width: 768px) {
-  .content-wrapper {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .image-section {
-    order: -1;
-    width: 100%;
-    text-align: center;
-  }
-
-  .bennie-large {
-    max-width: 200px;
-    margin: 0 auto;
-  }
-
   .list-container {
     padding: 1rem;
   }
@@ -150,6 +140,17 @@ onMounted(fetchSchools)
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .bennie-large {
+    max-width: 120px;
+    align-self: flex-end;
+    margin-top: 0;
   }
 
   .schools-table {
@@ -165,13 +166,6 @@ onMounted(fetchSchools)
     flex-direction: column;
     gap: 0.25rem;
   }
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
 }
 
 h1 {
