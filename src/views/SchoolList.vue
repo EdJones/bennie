@@ -120,8 +120,51 @@ onMounted(fetchSchools)
 
 .bennie-large {
   max-width: 300px;
+  width: 100%;
   height: auto;
   border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .image-section {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .bennie-large {
+    max-width: 200px;
+    margin: 0 auto;
+  }
+
+  .list-container {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .schools-table {
+    font-size: 0.875rem;
+  }
+
+  th,
+  td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
 }
 
 .header {
