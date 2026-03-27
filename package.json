@@ -1,13 +1,13 @@
 {
   "name": "bennie",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.30.2",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
+    "prepare": "vp config"
   },
   "dependencies": {
     "firebase": "^12.8.0",
@@ -16,6 +16,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "^7.2.4"
-  }
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "packageManager": "pnpm@10.30.2"
 }
