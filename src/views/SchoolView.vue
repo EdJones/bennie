@@ -1,31 +1,31 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { db } from '../firebase'
-import { doc, getDoc } from 'firebase/firestore'
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 
-const route = useRoute()
-const router = useRouter()
-const school = ref(null)
-const loading = ref(true)
+const route = useRoute();
+const router = useRouter();
+const school = ref(null);
+const loading = ref(true);
 
 onMounted(async () => {
   try {
-    const docRef = doc(db, 'schools', route.params.id)
-    const docSnap = await getDoc(docRef)
+    const docRef = doc(db, "schools", route.params.id);
+    const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      school.value = { id: docSnap.id, ...docSnap.data() }
+      school.value = { id: docSnap.id, ...docSnap.data() };
     }
   } catch (error) {
-    console.error('Error fetching school:', error)
+    console.error("Error fetching school:", error);
   }
-  loading.value = false
-})
+  loading.value = false;
+});
 
 function formatBoolean(value) {
-  if (value === true) return 'Yes'
-  if (value === false) return 'No'
-  return '—'
+  if (value === true) return "Yes";
+  if (value === false) return "No";
+  return "—";
 }
 </script>
 
@@ -54,37 +54,38 @@ function formatBoolean(value) {
           <dd>{{ school.state }}</dd>
           <dt>District</dt>
           <dd>{{ school.districtName }}</dd>
-          <dt>School</dt>
-          <dd>{{ school.schoolName }}</dd>
+          <dt>Level</dt>
+          <dd>{{ school.level === "district" ? "District" : "School" }}</dd>
+          <template v-if="school.level !== 'district'">
+            <dt>School</dt>
+            <dd>{{ school.schoolName || "—" }}</dd>
+          </template>
         </dl>
       </div>
 
       <div class="info-card">
         <h2>ELA Curriculum</h2>
-
-        <h3>Foundations</h3>
-        <dl class="info-grid">
-          <dt>Same curriculum for foundations and rest of reading block?</dt>
-          <dd>{{ formatBoolean(school.elaSameCurriculum) }}</dd>
-          <template v-if="school.elaSameCurriculum === false">
-            <dt>Provider</dt>
-            <dd>{{ school.foundationsProvider || '—' }}</dd>
-            <dt>Product</dt>
-            <dd>{{ school.foundationsProduct || '—' }}</dd>
-            <dt>Publication Year</dt>
-            <dd>{{ school.foundationsYear || '—' }}</dd>
-          </template>
-        </dl>
-
-        <h3>General/Comprehensive ELA</h3>
-        <dl class="info-grid">
-          <dt>Provider</dt>
-          <dd>{{ school.generalElaProvider || '—' }}</dd>
-          <dt>Product</dt>
-          <dd>{{ school.generalElaProduct || '—' }}</dd>
-          <dt>Publication Year</dt>
-          <dd>{{ school.generalElaYear || '—' }}</dd>
-        </dl>
+        <div v-if="!school.elaCurricula?.length" class="empty-state">
+          No curriculum data on record.
+        </div>
+        <table v-else class="curricula-table">
+          <thead>
+            <tr>
+              <th>Grades</th>
+              <th>Provider</th>
+              <th>Product</th>
+              <th>Year</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(entry, index) in school.elaCurricula" :key="index">
+              <td>{{ entry.gradeRange || "—" }}</td>
+              <td>{{ entry.provider || "—" }}</td>
+              <td>{{ entry.product || "—" }}</td>
+              <td>{{ entry.year || "—" }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <div class="info-card">
@@ -93,12 +94,12 @@ function formatBoolean(value) {
           <dt>Teachers trained on general ELA curriculum?</dt>
           <dd>{{ formatBoolean(school.trainingGeneralEla) }}</dd>
           <dt>Year ELA curriculum first implemented</dt>
-          <dd>{{ school.elaImplementationYear || '—' }}</dd>
+          <dd>{{ school.elaImplementationYear || "—" }}</dd>
           <dt>Teachers received Science of Reading training?</dt>
           <dd>{{ formatBoolean(school.trainingScienceOfReading) }}</dd>
           <template v-if="school.trainingScienceOfReading === true">
             <dt>Training Program</dt>
-            <dd>{{ school.sorTrainingProgram || '—' }}</dd>
+            <dd>{{ school.sorTrainingProgram || "—" }}</dd>
           </template>
         </dl>
       </div>
@@ -120,7 +121,7 @@ function formatBoolean(value) {
               </dd>
             </template>
             <dt>Assessment Frequency</dt>
-            <dd>{{ school.progressMonitoringFrequency || '—' }}</dd>
+            <dd>{{ school.progressMonitoringFrequency || "—" }}</dd>
           </template>
         </dl>
 
@@ -138,7 +139,7 @@ function formatBoolean(value) {
               </dd>
             </template>
             <dt>Assessment Frequency</dt>
-            <dd>{{ school.diagnosticAssessmentFrequency || '—' }}</dd>
+            <dd>{{ school.diagnosticAssessmentFrequency || "—" }}</dd>
           </template>
         </dl>
       </div>
@@ -148,7 +149,9 @@ function formatBoolean(value) {
         <dl class="info-grid">
           <dt>Uses additional literacy products?</dt>
           <dd>{{ formatBoolean(school.additionalProducts) }}</dd>
-          <template v-if="school.additionalProducts === true && school.additionalProductTypes?.length">
+          <template
+            v-if="school.additionalProducts === true && school.additionalProductTypes?.length"
+          >
             <dt>Product Types</dt>
             <dd>
               <ul class="product-list">
@@ -174,7 +177,8 @@ function formatBoolean(value) {
   padding: 2rem;
 }
 
-.loading, .not-found {
+.loading,
+.not-found {
   text-align: center;
   padding: 3rem;
   color: #666;
@@ -204,7 +208,8 @@ function formatBoolean(value) {
   gap: 0.5rem;
 }
 
-.btn-primary, .btn-secondary {
+.btn-primary,
+.btn-secondary {
   padding: 0.5rem 1rem;
   border: none;
   border-radius: 4px;
@@ -289,5 +294,37 @@ function formatBoolean(value) {
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.empty-state {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.curricula-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.curricula-table th,
+.curricula-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.curricula-table th {
+  color: #666;
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
+.curricula-table td {
+  color: #333;
+}
+
+.curricula-table tr:last-child td {
+  border-bottom: none;
 }
 </style>

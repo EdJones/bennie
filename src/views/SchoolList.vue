@@ -1,45 +1,45 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { db } from '../firebase'
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore'
-import { useAuth } from '../composables/useAuth'
-import { logSchoolDelete } from '../services/activityLog'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { db } from "../firebase";
+import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { useAuth } from "../composables/useAuth";
+import { logSchoolDelete } from "../services/activityLog";
 
-const router = useRouter()
-const { user, isAdmin } = useAuth()
-const schools = ref([])
-const loading = ref(true)
+const router = useRouter();
+const { user, isAdmin } = useAuth();
+const schools = ref([]);
+const loading = ref(true);
 
 async function fetchSchools() {
-  loading.value = true
+  loading.value = true;
   try {
-    const querySnapshot = await getDocs(collection(db, 'schools'))
-    schools.value = querySnapshot.docs.map(doc => ({
+    const querySnapshot = await getDocs(collection(db, "schools"));
+    schools.value = querySnapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
-    }))
+      ...doc.data(),
+    }));
   } catch (error) {
-    console.error('Error fetching schools:', error)
+    console.error("Error fetching schools:", error);
   }
-  loading.value = false
+  loading.value = false;
 }
 
 async function deleteSchool(id) {
-  if (!confirm('Are you sure you want to delete this entry?')) return
+  if (!confirm("Are you sure you want to delete this entry?")) return;
 
-  const school = schools.value.find(s => s.id === id)
+  const school = schools.value.find((s) => s.id === id);
   try {
-    await deleteDoc(doc(db, 'schools', id))
-    await logSchoolDelete(user.value, id, school)
-    schools.value = schools.value.filter(s => s.id !== id)
+    await deleteDoc(doc(db, "schools", id));
+    await logSchoolDelete(user.value, id, school);
+    schools.value = schools.value.filter((s) => s.id !== id);
   } catch (error) {
-    console.error('Error deleting:', error)
-    alert('Error deleting entry')
+    console.error("Error deleting:", error);
+    alert("Error deleting entry");
   }
 }
 
-onMounted(fetchSchools)
+onMounted(fetchSchools);
 </script>
 
 <template>
@@ -48,9 +48,7 @@ onMounted(fetchSchools)
       <div class="header">
         <div class="header-left">
           <h1>Schools</h1>
-          <button class="btn-primary" @click="router.push('/add')">
-            + Add New
-          </button>
+          <button class="btn-primary" @click="router.push('/add')">+ Add New</button>
         </div>
         <img src="/bennie_large.png" alt="Bennie the school detective dog" class="bennie-large" />
       </div>
@@ -74,14 +72,13 @@ onMounted(fetchSchools)
           <tr v-for="school in schools" :key="school.id">
             <td>{{ school.state }}</td>
             <td>{{ school.districtName }}</td>
-            <td>{{ school.schoolName }}</td>
+            <td>
+              {{ school.level === "district" ? school.districtName : school.schoolName }}
+              <span v-if="school.level === 'district'" class="level-badge">District</span>
+            </td>
             <td class="actions">
-              <button class="btn-view" @click="router.push(`/view/${school.id}`)">
-                View
-              </button>
-              <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">
-                Edit
-              </button>
+              <button class="btn-view" @click="router.push(`/view/${school.id}`)">View</button>
+              <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">Edit</button>
               <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
                 Delete
               </button>
@@ -260,5 +257,17 @@ tr:hover {
 
 .btn-delete:hover {
   background-color: #fdd;
+}
+
+.level-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  background-color: #e8f4f8;
+  color: #4a90a4;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  vertical-align: middle;
 }
 </style>
