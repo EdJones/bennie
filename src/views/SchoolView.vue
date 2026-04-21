@@ -68,6 +68,55 @@ function formatBoolean(value) {
         </dl>
       </div>
 
+      <div
+        v-if="school.mcaReadingPct != null || school.spedPct != null || school.enrollment"
+        class="info-card"
+      >
+        <h2>Minnesota Profile <span class="source-tag">via MN Reads Database</span></h2>
+        <dl class="info-grid">
+          <template v-if="school.charter != null">
+            <dt>Charter School</dt>
+            <dd>{{ school.charter ? "Yes" : "No" }}</dd>
+          </template>
+          <template v-if="school.districtNumber">
+            <dt>District #</dt>
+            <dd>{{ school.districtNumber }}</dd>
+          </template>
+          <template v-if="school.enrollment">
+            <dt>Enrollment</dt>
+            <dd>{{ school.enrollment }}</dd>
+          </template>
+          <template v-if="school.spedPct != null">
+            <dt>Special Ed</dt>
+            <dd>{{ school.spedPct }}%</dd>
+          </template>
+          <template v-if="school.frlPct != null">
+            <dt>Free &amp; Reduced Lunch</dt>
+            <dd>{{ school.frlPct }}%</dd>
+          </template>
+          <template v-if="school.mcaReadingPct != null">
+            <dt>MCA Reading Proficiency</dt>
+            <dd>{{ school.mcaReadingPct }}%</dd>
+          </template>
+          <template v-if="school.mcaFrlPct != null">
+            <dt>MCA Reading (F&amp;R students)</dt>
+            <dd>{{ school.mcaFrlPct }}%</dd>
+          </template>
+        </dl>
+        <template v-if="school.tier2Materials">
+          <h3>Tier 2 Intervention Materials</h3>
+          <p class="additional-info-text">{{ school.tier2Materials }}</p>
+        </template>
+        <template v-if="school.screeningMeasures">
+          <h3>Screening Measures</h3>
+          <p class="additional-info-text">{{ school.screeningMeasures }}</p>
+        </template>
+        <template v-if="school.progressMonitoringMeasures">
+          <h3>Progress Monitoring Measures</h3>
+          <p class="additional-info-text">{{ school.progressMonitoringMeasures }}</p>
+        </template>
+      </div>
+
       <div v-if="cemdDistrict" class="info-card">
         <h2>District Context <span class="source-tag">via CEMD</span></h2>
         <dl class="info-grid">
