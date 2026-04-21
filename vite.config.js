@@ -12,7 +12,7 @@ export default defineConfig({
       "/api/cemd": {
         target: "https://api.cemd.org",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/cemd/, ""),
+        rewrite: (path) => path.replace(/^\/api\/cemd/, "/districts/"),
       },
     },
   },
