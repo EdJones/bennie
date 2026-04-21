@@ -3,11 +3,13 @@ import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { fetchCemdDistrict } from "../services/cemd";
 
 const route = useRoute();
 const router = useRouter();
 const school = ref(null);
 const loading = ref(true);
+const cemdDistrict = ref(null);
 
 onMounted(async () => {
   try {
@@ -15,6 +17,9 @@ onMounted(async () => {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       school.value = { id: docSnap.id, ...docSnap.data() };
+      fetchCemdDistrict(school.value.state, school.value.districtName).then((d) => {
+        cemdDistrict.value = d;
+      });
     }
   } catch (error) {
     console.error("Error fetching school:", error);
@@ -40,7 +45,7 @@ function formatBoolean(value) {
 
     <div v-else>
       <div class="header">
-        <h1>{{ school.schoolName }}</h1>
+        <h1>{{ school.level === "district" ? school.districtName : school.schoolName }}</h1>
         <div class="header-actions">
           <button class="btn-secondary" @click="router.push('/')">Back</button>
           <button class="btn-primary" @click="router.push(`/edit/${school.id}`)">Edit</button>
@@ -61,6 +66,38 @@ function formatBoolean(value) {
             <dd>{{ school.schoolName || "—" }}</dd>
           </template>
         </dl>
+      </div>
+
+      <div v-if="cemdDistrict" class="info-card">
+        <h2>District Context <span class="source-tag">via CEMD</span></h2>
+        <dl class="info-grid">
+          <dt>Students</dt>
+          <dd>{{ cemdDistrict.students_count?.toLocaleString() ?? "—" }}</dd>
+          <dt>Schools</dt>
+          <dd>{{ cemdDistrict.schools_count ?? "—" }}</dd>
+          <dt>Locality</dt>
+          <dd>{{ cemdDistrict.locality ?? "—" }}</dd>
+          <dt>Free/Reduced Lunch</dt>
+          <dd>{{ cemdDistrict.students_frl_pct ? cemdDistrict.students_frl_pct + "%" : "—" }}</dd>
+          <dt>English Language Learners</dt>
+          <dd>{{ cemdDistrict.students_ell_pct ? cemdDistrict.students_ell_pct + "%" : "—" }}</dd>
+          <dt>Per-Pupil Spending</dt>
+          <dd>
+            {{
+              cemdDistrict.finance_spend_per_pupil
+                ? "$" + cemdDistrict.finance_spend_per_pupil.toLocaleString()
+                : "—"
+            }}
+          </dd>
+        </dl>
+        <a
+          v-if="cemdDistrict.stanford_data?.[0]?.stanford_link"
+          :href="cemdDistrict.stanford_data[0].stanford_link"
+          target="_blank"
+          rel="noopener"
+          class="stanford-link"
+          >Stanford Education Data Archive →</a
+        >
       </div>
 
       <div class="info-card">
@@ -294,6 +331,25 @@ function formatBoolean(value) {
   line-height: 1.6;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.source-tag {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #888;
+  margin-left: 0.4rem;
+}
+
+.stanford-link {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #4a90a4;
+  text-decoration: none;
+}
+
+.stanford-link:hover {
+  text-decoration: underline;
 }
 
 .empty-state {
