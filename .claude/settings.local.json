@@ -1,0 +1,5 @@
+{
+  "permissions": {
+    "allow": ["WebFetch(domain:www.cemd.org)", "WebFetch(domain:api.cemd.org)"]
+  }
+}
