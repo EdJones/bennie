@@ -59,6 +59,7 @@ import { db } from "../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "../composables/useAuth";
 import { logSchoolDelete } from "../services/activityLog";
+import { getSchoolCountForDistricts } from "../services/nces";
 
 const router = useRouter();
 const route = useRoute();
@@ -106,6 +107,7 @@ const stateSummary = computed(() =>
 
 const totalDistricts = computed(() => schools.value.filter((s) => s.level === "district").length);
 const totalSchools = computed(() => schools.value.filter((s) => s.level === "school").length);
+const districtSchoolCount = ref(null);
 
 const filteredSchools = computed(() => {
   const list = selectedState.value
@@ -133,6 +135,16 @@ async function fetchSchools() {
     console.error("Error fetching schools:", error);
   }
   loading.value = false;
+
+  const districtsByState = {};
+  for (const s of schools.value.filter(
+    (s) => s.level === "district" && s.districtName && s.state,
+  )) {
+    (districtsByState[s.state] ??= []).push(s.districtName);
+  }
+  getSchoolCountForDistricts(districtsByState).then((count) => {
+    districtSchoolCount.value = count;
+  });
 }
 
 async function deleteSchool(id) {
@@ -187,7 +199,13 @@ onUnmounted(() => {
             <div class="summary-label">Districts</div>
           </div>
           <div class="summary-card">
-            <div class="summary-value">{{ totalSchools }}</div>
+            <div class="summary-value">
+              {{
+                districtSchoolCount !== null
+                  ? "~" + districtSchoolCount.toLocaleString()
+                  : totalSchools
+              }}
+            </div>
             <div class="summary-label">Schools</div>
           </div>
         </div>
@@ -385,22 +403,22 @@ h1 {
 .summary-card {
   flex: 1;
   background: white;
-  padding: 1.25rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
 .summary-value {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
 
 .summary-label {
-  font-size: 0.8rem;
-  color: #666;
+  font-size: 0.7rem;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
