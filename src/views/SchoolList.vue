@@ -279,23 +279,24 @@ onUnmounted(() => {
               <th>State</th>
               <th>District</th>
               <th>School</th>
-              <th>Actions</th>
+              <th v-if="isAdmin"></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="school in filteredSchools" :key="school.id">
+            <tr
+              v-for="school in filteredSchools"
+              :key="school.id"
+              class="clickable-row"
+              @click="router.push(`/view/${school.id}`)"
+            >
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
               <td>
                 {{ school.level === "district" ? school.districtName : school.schoolName }}
                 <span v-if="school.level === 'district'" class="level-badge">District</span>
               </td>
-              <td class="actions">
-                <button class="btn-view" @click="router.push(`/view/${school.id}`)">View</button>
-                <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">Edit</button>
-                <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
-                  Delete
-                </button>
+              <td v-if="isAdmin" class="actions">
+                <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -635,44 +636,24 @@ th {
   color: #555;
 }
 
-tr:hover {
-  background-color: #f8f9fa;
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-view,
-.btn-edit,
-.btn-delete {
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.875rem;
+.clickable-row {
   cursor: pointer;
 }
 
-.btn-view {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+.clickable-row:hover {
+  background-color: #f5f9fb;
 }
 
-.btn-view:hover {
-  background-color: #c8e6c9;
-}
-
-.btn-edit {
-  background-color: #e8f4f8;
-  color: #4a90a4;
-}
-
-.btn-edit:hover {
-  background-color: #d0e8f0;
+.actions {
+  text-align: right;
 }
 
 .btn-delete {
+  padding: 0.3rem 0.7rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
   background-color: #fee;
   color: #c44;
 }
