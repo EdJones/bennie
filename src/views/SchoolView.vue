@@ -52,7 +52,111 @@ function formatBoolean(value) {
         </div>
       </div>
 
-      <div class="info-card">
+      <div class="info-card primary">
+        <h2>ELA Curriculum</h2>
+        <div v-if="!school.elaCurricula?.length" class="empty-state">
+          No curriculum data on record.
+        </div>
+        <table v-else class="curricula-table">
+          <thead>
+            <tr>
+              <th>Grades</th>
+              <th>Provider</th>
+              <th>Product</th>
+              <th>Year</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(entry, index) in school.elaCurricula" :key="index">
+              <td>{{ entry.gradeRange || "—" }}</td>
+              <td>{{ entry.provider || "—" }}</td>
+              <td>{{ entry.product || "—" }}</td>
+              <td>{{ entry.year || "—" }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-card primary">
+        <h2>Screening & Assessment</h2>
+
+        <h3>Progress Monitoring</h3>
+        <dl class="info-grid">
+          <dt>Uses progress monitoring tools?</dt>
+          <dd>{{ formatBoolean(school.usesProgressMonitoring) }}</dd>
+          <template v-if="school.usesProgressMonitoring === true">
+            <template v-if="school.progressMonitoringTools?.length">
+              <dt>Tools</dt>
+              <dd>
+                <ul class="product-list">
+                  <li v-for="tool in school.progressMonitoringTools" :key="tool">{{ tool }}</li>
+                </ul>
+              </dd>
+            </template>
+            <dt>Frequency</dt>
+            <dd>{{ school.progressMonitoringFrequency || "—" }}</dd>
+          </template>
+        </dl>
+
+        <h3>Diagnostic Assessments</h3>
+        <dl class="info-grid">
+          <dt>Uses diagnostic assessments?</dt>
+          <dd>{{ formatBoolean(school.usesDiagnosticAssessments) }}</dd>
+          <template v-if="school.usesDiagnosticAssessments === true">
+            <template v-if="school.diagnosticAssessmentTools?.length">
+              <dt>Tools</dt>
+              <dd>
+                <ul class="product-list">
+                  <li v-for="tool in school.diagnosticAssessmentTools" :key="tool">{{ tool }}</li>
+                </ul>
+              </dd>
+            </template>
+            <dt>Frequency</dt>
+            <dd>{{ school.diagnosticAssessmentFrequency || "—" }}</dd>
+          </template>
+        </dl>
+      </div>
+
+      <div class="info-card primary">
+        <h2>Training & Implementation</h2>
+        <dl class="info-grid">
+          <dt>Teachers trained on general ELA curriculum?</dt>
+          <dd>{{ formatBoolean(school.trainingGeneralEla) }}</dd>
+          <dt>Year ELA curriculum first implemented</dt>
+          <dd>{{ school.elaImplementationYear || "—" }}</dd>
+          <dt>Teachers received Science of Reading training?</dt>
+          <dd>{{ formatBoolean(school.trainingScienceOfReading) }}</dd>
+          <template v-if="school.trainingScienceOfReading === true">
+            <dt>Training Program</dt>
+            <dd>{{ school.sorTrainingProgram || "—" }}</dd>
+          </template>
+        </dl>
+      </div>
+
+      <div v-if="school.additionalProducts !== null" class="info-card">
+        <h2>Additional Products</h2>
+        <dl class="info-grid">
+          <dt>Uses additional literacy products?</dt>
+          <dd>{{ formatBoolean(school.additionalProducts) }}</dd>
+          <template
+            v-if="school.additionalProducts === true && school.additionalProductTypes?.length"
+          >
+            <dt>Product Types</dt>
+            <dd>
+              <ul class="product-list">
+                <li v-for="type in school.additionalProductTypes" :key="type">{{ type }}</li>
+              </ul>
+            </dd>
+          </template>
+        </dl>
+      </div>
+
+      <div v-if="school.additionalInformation" class="info-card">
+        <h2>Additional Information</h2>
+        <p class="additional-info-text">{{ school.additionalInformation }}</p>
+      </div>
+
+      <div class="info-card context">
         <h2>Location</h2>
         <dl class="info-grid">
           <dt>State</dt>
@@ -70,7 +174,7 @@ function formatBoolean(value) {
 
       <div
         v-if="school.mcaReadingPct != null || school.spedPct != null || school.enrollment"
-        class="info-card"
+        class="info-card context"
       >
         <h2>Minnesota Profile <span class="source-tag">via MN Reads Database</span></h2>
         <dl class="info-grid">
@@ -117,7 +221,7 @@ function formatBoolean(value) {
         </template>
       </div>
 
-      <div v-if="cemdDistrict" class="info-card">
+      <div v-if="cemdDistrict" class="info-card context">
         <h2>District Context <span class="source-tag">via CEMD</span></h2>
         <dl class="info-grid">
           <dt>Students</dt>
@@ -147,110 +251,6 @@ function formatBoolean(value) {
           class="stanford-link"
           >Stanford Education Data Archive →</a
         >
-      </div>
-
-      <div class="info-card">
-        <h2>ELA Curriculum</h2>
-        <div v-if="!school.elaCurricula?.length" class="empty-state">
-          No curriculum data on record.
-        </div>
-        <table v-else class="curricula-table">
-          <thead>
-            <tr>
-              <th>Grades</th>
-              <th>Provider</th>
-              <th>Product</th>
-              <th>Year</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(entry, index) in school.elaCurricula" :key="index">
-              <td>{{ entry.gradeRange || "—" }}</td>
-              <td>{{ entry.provider || "—" }}</td>
-              <td>{{ entry.product || "—" }}</td>
-              <td>{{ entry.year || "—" }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="info-card">
-        <h2>Training & Implementation</h2>
-        <dl class="info-grid">
-          <dt>Teachers trained on general ELA curriculum?</dt>
-          <dd>{{ formatBoolean(school.trainingGeneralEla) }}</dd>
-          <dt>Year ELA curriculum first implemented</dt>
-          <dd>{{ school.elaImplementationYear || "—" }}</dd>
-          <dt>Teachers received Science of Reading training?</dt>
-          <dd>{{ formatBoolean(school.trainingScienceOfReading) }}</dd>
-          <template v-if="school.trainingScienceOfReading === true">
-            <dt>Training Program</dt>
-            <dd>{{ school.sorTrainingProgram || "—" }}</dd>
-          </template>
-        </dl>
-      </div>
-
-      <div class="info-card">
-        <h2>Progress Monitoring & Diagnostic Assessments</h2>
-
-        <h3>Progress Monitoring</h3>
-        <dl class="info-grid">
-          <dt>Uses progress monitoring tools?</dt>
-          <dd>{{ formatBoolean(school.usesProgressMonitoring) }}</dd>
-          <template v-if="school.usesProgressMonitoring === true">
-            <template v-if="school.progressMonitoringTools?.length">
-              <dt>Progress Monitoring Tools</dt>
-              <dd>
-                <ul class="product-list">
-                  <li v-for="tool in school.progressMonitoringTools" :key="tool">{{ tool }}</li>
-                </ul>
-              </dd>
-            </template>
-            <dt>Assessment Frequency</dt>
-            <dd>{{ school.progressMonitoringFrequency || "—" }}</dd>
-          </template>
-        </dl>
-
-        <h3>Diagnostic Assessments</h3>
-        <dl class="info-grid">
-          <dt>Uses diagnostic assessments?</dt>
-          <dd>{{ formatBoolean(school.usesDiagnosticAssessments) }}</dd>
-          <template v-if="school.usesDiagnosticAssessments === true">
-            <template v-if="school.diagnosticAssessmentTools?.length">
-              <dt>Diagnostic Assessment Tools</dt>
-              <dd>
-                <ul class="product-list">
-                  <li v-for="tool in school.diagnosticAssessmentTools" :key="tool">{{ tool }}</li>
-                </ul>
-              </dd>
-            </template>
-            <dt>Assessment Frequency</dt>
-            <dd>{{ school.diagnosticAssessmentFrequency || "—" }}</dd>
-          </template>
-        </dl>
-      </div>
-
-      <div v-if="school.additionalProducts !== null" class="info-card">
-        <h2>Additional Products</h2>
-        <dl class="info-grid">
-          <dt>Uses additional literacy products?</dt>
-          <dd>{{ formatBoolean(school.additionalProducts) }}</dd>
-          <template
-            v-if="school.additionalProducts === true && school.additionalProductTypes?.length"
-          >
-            <dt>Product Types</dt>
-            <dd>
-              <ul class="product-list">
-                <li v-for="type in school.additionalProductTypes" :key="type">{{ type }}</li>
-              </ul>
-            </dd>
-          </template>
-        </dl>
-      </div>
-
-      <div v-if="school.additionalInformation" class="info-card">
-        <h2>Additional Information</h2>
-        <p class="additional-info-text">{{ school.additionalInformation }}</p>
       </div>
     </div>
   </div>
@@ -329,12 +329,26 @@ function formatBoolean(value) {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.info-card.primary {
+  border-left: 4px solid #4a90a4;
+}
+
+.info-card.context {
+  box-shadow: none;
+  border: 1px solid #e8e8e8;
+}
+
 .info-card h2 {
   margin: 0 0 1rem 0;
   color: #333;
   font-size: 1.1rem;
   border-bottom: 2px solid #e0e0e0;
   padding-bottom: 0.5rem;
+}
+
+.info-card.primary h2 {
+  color: #4a90a4;
+  border-bottom-color: #b8d8e4;
 }
 
 .info-card h3 {
