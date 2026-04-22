@@ -1,6 +1,60 @@
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+
+const STATE_NAMES = {
+  AL: "Alabama",
+  AK: "Alaska",
+  AZ: "Arizona",
+  AR: "Arkansas",
+  CA: "California",
+  CO: "Colorado",
+  CT: "Connecticut",
+  DE: "Delaware",
+  FL: "Florida",
+  GA: "Georgia",
+  HI: "Hawaii",
+  ID: "Idaho",
+  IL: "Illinois",
+  IN: "Indiana",
+  IA: "Iowa",
+  KS: "Kansas",
+  KY: "Kentucky",
+  LA: "Louisiana",
+  ME: "Maine",
+  MD: "Maryland",
+  MA: "Massachusetts",
+  MI: "Michigan",
+  MN: "Minnesota",
+  MS: "Mississippi",
+  MO: "Missouri",
+  MT: "Montana",
+  NE: "Nebraska",
+  NV: "Nevada",
+  NH: "New Hampshire",
+  NJ: "New Jersey",
+  NM: "New Mexico",
+  NY: "New York",
+  NC: "North Carolina",
+  ND: "North Dakota",
+  OH: "Ohio",
+  OK: "Oklahoma",
+  OR: "Oregon",
+  PA: "Pennsylvania",
+  RI: "Rhode Island",
+  SC: "South Carolina",
+  SD: "South Dakota",
+  TN: "Tennessee",
+  TX: "Texas",
+  UT: "Utah",
+  VT: "Vermont",
+  VA: "Virginia",
+  WA: "Washington",
+  WV: "West Virginia",
+  WI: "Wisconsin",
+  WY: "Wyoming",
+  DC: "Washington D.C.",
+};
 import { db } from "../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "../composables/useAuth";
@@ -12,10 +66,27 @@ const { user, isAdmin } = useAuth();
 const schools = ref([]);
 const loading = ref(true);
 const selectedState = ref(route.query.state || "");
+const showDropdown = ref(false);
+const dropdownRef = ref(null);
 
 watch(selectedState, (val) => {
   router.replace({ query: val ? { state: val } : {} });
 });
+
+function stateLabel(abbr) {
+  return STATE_NAMES[abbr] ?? abbr;
+}
+
+function selectState(state) {
+  selectedState.value = state;
+  showDropdown.value = false;
+}
+
+function handleOutsideClick(e) {
+  if (dropdownRef.value && !dropdownRef.value.contains(e.target)) {
+    showDropdown.value = false;
+  }
+}
 
 const uniqueStates = computed(() =>
   [...new Set(schools.value.map((s) => s.state).filter(Boolean))].sort(),
@@ -78,7 +149,14 @@ async function deleteSchool(id) {
   }
 }
 
-onMounted(fetchSchools);
+onMounted(() => {
+  fetchSchools();
+  document.addEventListener("click", handleOutsideClick);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", handleOutsideClick);
+});
 </script>
 
 <template>
@@ -120,14 +198,39 @@ onMounted(fetchSchools);
           </span>
         </div>
 
-        <div class="filter-row">
-          <select v-model="selectedState" class="state-select">
-            <option value="">Select a state...</option>
-            <option v-for="state in uniqueStates" :key="state" :value="state">
-              {{ state }}
-            </option>
-          </select>
-          <button v-if="selectedState" class="btn-clear" @click="selectedState = ''">Clear</button>
+        <div class="state-dropdown" ref="dropdownRef">
+          <button
+            class="dropdown-trigger"
+            :class="{ open: showDropdown, active: selectedState }"
+            @click="showDropdown = !showDropdown"
+          >
+            <span v-if="selectedState" class="trigger-label">{{ stateLabel(selectedState) }}</span>
+            <span v-else class="trigger-placeholder">Select a state...</span>
+            <span class="trigger-right">
+              <button
+                v-if="selectedState"
+                class="clear-btn"
+                @click.stop="selectedState = ''"
+                aria-label="Clear selection"
+              >
+                ×
+              </button>
+              <span class="chevron" :class="{ open: showDropdown }"></span>
+            </span>
+          </button>
+
+          <div v-if="showDropdown" class="dropdown-panel">
+            <button
+              v-for="s in stateSummary"
+              :key="s.state"
+              class="dropdown-option"
+              :class="{ selected: selectedState === s.state }"
+              @click="selectState(s.state)"
+            >
+              <span class="option-name">{{ stateLabel(s.state) }}</span>
+              <span class="option-count">{{ s.total.toLocaleString() }}</span>
+            </button>
+          </div>
         </div>
 
         <div v-if="!selectedState" class="empty">Select a state above to view records.</div>
@@ -242,7 +345,7 @@ onMounted(fetchSchools);
     flex-direction: column;
   }
 
-  .state-select {
+  .state-dropdown {
     width: 100%;
   }
 }
@@ -318,41 +421,125 @@ h1 {
   font-weight: 500;
 }
 
-.filter-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+.state-dropdown {
+  position: relative;
+  width: 280px;
   margin-bottom: 1.5rem;
 }
 
-.state-select {
-  padding: 0.6rem 0.9rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 1rem;
+.dropdown-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
   background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
   color: #333;
-  cursor: pointer;
-  min-width: 200px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  text-align: left;
 }
 
-.state-select:focus {
-  outline: 2px solid #4a90a4;
-  outline-offset: 1px;
+.dropdown-trigger:hover,
+.dropdown-trigger.open {
+  border-color: #4a90a4;
+  box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.12);
 }
 
-.btn-clear {
-  padding: 0.6rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: white;
+.trigger-placeholder {
+  color: #aaa;
+}
+
+.trigger-right {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: none;
+  border-radius: 50%;
+  background: #e0e0e0;
   color: #666;
-  font-size: 0.875rem;
+  font-size: 0.9rem;
+  line-height: 1;
   cursor: pointer;
+  padding: 0;
 }
 
-.btn-clear:hover {
-  background: #f0f0f0;
+.clear-btn:hover {
+  background: #ccc;
+}
+
+.chevron {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid #999;
+  border-bottom: 2px solid #999;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.15s ease;
+}
+
+.chevron.open {
+  transform: rotate(-135deg) translateY(-2px);
+}
+
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.dropdown-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1rem;
+  border: none;
+  background: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  color: #333;
+  transition: background 0.1s;
+}
+
+.dropdown-option:hover {
+  background: #f5f9fb;
+}
+
+.dropdown-option.selected {
+  background: #e8f4f8;
+  color: #4a90a4;
+  font-weight: 500;
+}
+
+.option-count {
+  font-size: 0.8rem;
+  color: #aaa;
+  font-weight: 400;
 }
 
 .schools-table {
