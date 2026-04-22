@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { db } from "../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
@@ -10,6 +10,40 @@ const router = useRouter();
 const { user, isAdmin } = useAuth();
 const schools = ref([]);
 const loading = ref(true);
+const selectedState = ref("");
+
+const uniqueStates = computed(() =>
+  [...new Set(schools.value.map((s) => s.state).filter(Boolean))].sort(),
+);
+
+const stateSummary = computed(() =>
+  uniqueStates.value.map((state) => {
+    const group = schools.value.filter((s) => s.state === state);
+    return {
+      state,
+      total: group.length,
+      districts: group.filter((s) => s.level === "district").length,
+      schools: group.filter((s) => s.level === "school").length,
+    };
+  }),
+);
+
+const totalDistricts = computed(() => schools.value.filter((s) => s.level === "district").length);
+const totalSchools = computed(() => schools.value.filter((s) => s.level === "school").length);
+
+const filteredSchools = computed(() => {
+  const list = selectedState.value
+    ? schools.value.filter((s) => s.state === selectedState.value)
+    : [];
+  return [...list].sort((a, b) => {
+    const distA = a.districtName ?? "";
+    const distB = b.districtName ?? "";
+    if (distA !== distB) return distA.localeCompare(distB);
+    const nameA = a.level === "district" ? "" : (a.schoolName ?? "");
+    const nameB = b.level === "district" ? "" : (b.schoolName ?? "");
+    return nameA.localeCompare(nameB);
+  });
+});
 
 async function fetchSchools() {
   loading.value = true;
@@ -55,37 +89,72 @@ onMounted(fetchSchools);
 
       <div v-if="loading" class="loading">Loading...</div>
 
-      <div v-else-if="schools.length === 0" class="empty">
-        No schools added yet. Click "Add New" to get started.
-      </div>
+      <template v-else>
+        <div class="summary-section">
+          <div class="summary-card">
+            <div class="summary-value">{{ schools.length }}</div>
+            <div class="summary-label">Total Records</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value">{{ uniqueStates.length }}</div>
+            <div class="summary-label">States</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value">{{ totalDistricts }}</div>
+            <div class="summary-label">Districts</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value">{{ totalSchools }}</div>
+            <div class="summary-label">Schools</div>
+          </div>
+        </div>
 
-      <table v-else class="schools-table">
-        <thead>
-          <tr>
-            <th>State</th>
-            <th>District</th>
-            <th>School</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="school in schools" :key="school.id">
-            <td>{{ school.state }}</td>
-            <td>{{ school.districtName }}</td>
-            <td>
-              {{ school.level === "district" ? school.districtName : school.schoolName }}
-              <span v-if="school.level === 'district'" class="level-badge">District</span>
-            </td>
-            <td class="actions">
-              <button class="btn-view" @click="router.push(`/view/${school.id}`)">View</button>
-              <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">Edit</button>
-              <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
-                Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <div class="state-chips">
+          <span v-for="s in stateSummary" :key="s.state" class="state-chip">
+            {{ s.state }}: {{ s.total }}
+          </span>
+        </div>
+
+        <div class="filter-row">
+          <select v-model="selectedState" class="state-select">
+            <option value="">Select a state...</option>
+            <option v-for="state in uniqueStates" :key="state" :value="state">
+              {{ state }}
+            </option>
+          </select>
+          <button v-if="selectedState" class="btn-clear" @click="selectedState = ''">Clear</button>
+        </div>
+
+        <div v-if="!selectedState" class="empty">Select a state above to view records.</div>
+
+        <table v-else class="schools-table">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>District</th>
+              <th>School</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="school in filteredSchools" :key="school.id">
+              <td>{{ school.state }}</td>
+              <td>{{ school.districtName }}</td>
+              <td>
+                {{ school.level === "district" ? school.districtName : school.schoolName }}
+                <span v-if="school.level === 'district'" class="level-badge">District</span>
+              </td>
+              <td class="actions">
+                <button class="btn-view" @click="router.push(`/view/${school.id}`)">View</button>
+                <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">Edit</button>
+                <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </template>
     </div>
   </div>
 </template>
@@ -163,6 +232,14 @@ onMounted(fetchSchools);
     flex-direction: column;
     gap: 0.25rem;
   }
+
+  .summary-section {
+    flex-direction: column;
+  }
+
+  .state-select {
+    width: 100%;
+  }
 }
 
 h1 {
@@ -189,6 +266,88 @@ h1 {
   text-align: center;
   padding: 3rem;
   color: #666;
+}
+
+.summary-section {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.summary-card {
+  flex: 1;
+  background: white;
+  padding: 1.25rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.summary-value {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.25rem;
+}
+
+.summary-label {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.state-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.state-chip {
+  background: #e8f4f8;
+  color: #4a90a4;
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.state-select {
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.state-select:focus {
+  outline: 2px solid #4a90a4;
+  outline-offset: 1px;
+}
+
+.btn-clear {
+  padding: 0.6rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+  color: #666;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-clear:hover {
+  background: #f0f0f0;
 }
 
 .schools-table {
