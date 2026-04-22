@@ -3,7 +3,7 @@
  * from the DESE Profiles portal and imports records to Firestore.
  *
  * Run with:
- *   node --env-file=.env.local scripts/import-ma-ela.js [--dry-run]
+ *   node --env-file=.env scripts/import-ma-ela.js [--dry-run]
  *
  * Dedup key: districtId (district code) + state "MA". Existing records are skipped.
  */
