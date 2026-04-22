@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.cemd.org)",
+      "WebFetch(domain:api.cemd.org)",
+      "WebFetch(domain:cemd.org)",
+      "WebFetch(domain:curriculum-insights-map-f0f2945d8f7a.herokuapp.com)",
+      "WebFetch(domain:carei.umn.edu)",
+      "WebFetch(domain:profiles.doe.mass.edu)",
+      "WebFetch(domain:curriculumdashboard.mass.gov)",
+      "WebFetch(domain:www.doe.mass.edu)",
+      "WebFetch(domain:data.mass.gov)",
+      "Bash(curl -s -I \"https://profiles.doe.mass.edu/statereport/Curriculumdata.aspx\")",
+      "Bash(curl -s \"https://profiles.doe.mass.edu/statereport/Curriculumdata.aspx\")",
+      "WebSearch",
+      "WebFetch(domain:reportcard.education.ohio.gov)",
+      "WebFetch(domain:reports.education.ohio.gov)"
+    ]
+  }
+}

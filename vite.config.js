@@ -7,4 +7,13 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   plugins: [vue()],
+  server: {
+    proxy: {
+      "/api/cemd": {
+        target: "https://api.cemd.org",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/cemd/, "/districts/"),
+      },
+    },
+  },
 });

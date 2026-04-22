@@ -1,72 +1,72 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { auth } from '../firebase'
-import SchoolList from '../views/SchoolList.vue'
-import SchoolForm from '../views/SchoolForm.vue'
-import SchoolView from '../views/SchoolView.vue'
-import LoginView from '../views/LoginView.vue'
-import AdminPanel from '../views/AdminPanel.vue'
-import IssuesTracker from '../views/IssuesTracker.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import { auth } from "../firebase";
+import SchoolList from "../views/SchoolList.vue";
+import SchoolForm from "../views/SchoolForm.vue";
+import SchoolView from "../views/SchoolView.vue";
+import LoginView from "../views/LoginView.vue";
+import AdminPanel from "../views/AdminPanel.vue";
+import IssuesTracker from "../views/IssuesTracker.vue";
 
 const routes = [
   {
-    path: '/login',
-    name: 'login',
+    path: "/login",
+    name: "login",
     component: LoginView,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
-    path: '/',
-    name: 'home',
+    path: "/",
+    name: "home",
     component: SchoolList,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
-    path: '/add',
-    name: 'add',
+    path: "/add",
+    name: "add",
     component: SchoolForm,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
-    path: '/edit/:id',
-    name: 'edit',
+    path: "/edit/:id",
+    name: "edit",
     component: SchoolForm,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
-    path: '/view/:id',
-    name: 'view',
+    path: "/view/:id",
+    name: "view",
     component: SchoolView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false },
   },
   {
-    path: '/admin',
-    name: 'admin',
+    path: "/admin",
+    name: "admin",
     component: AdminPanel,
-    meta: { requiresAuth: true, requiresAdmin: true }
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
-    path: '/issues',
-    name: 'issues',
+    path: "/issues",
+    name: "issues",
     component: IssuesTracker,
-    meta: { requiresAuth: true }
-  }
-]
+    meta: { requiresAuth: true },
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
 router.beforeEach((to, from, next) => {
-  const requiresAuth = to.meta.requiresAuth !== false
+  const requiresAuth = to.meta.requiresAuth !== false;
 
   if (requiresAuth && !auth.currentUser) {
-    next('/login')
-  } else if (to.path === '/login' && auth.currentUser) {
-    next('/')
+    next("/login");
+  } else if (to.path === "/login" && auth.currentUser) {
+    next("/");
   } else {
-    next()
+    next();
   }
-})
+});
 
-export default router
+export default router;
