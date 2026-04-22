@@ -1,16 +1,21 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { ref, computed, onMounted, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { db } from "../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "../composables/useAuth";
 import { logSchoolDelete } from "../services/activityLog";
 
 const router = useRouter();
+const route = useRoute();
 const { user, isAdmin } = useAuth();
 const schools = ref([]);
 const loading = ref(true);
-const selectedState = ref("");
+const selectedState = ref(route.query.state || "");
+
+watch(selectedState, (val) => {
+  router.replace({ query: val ? { state: val } : {} });
+});
 
 const uniqueStates = computed(() =>
   [...new Set(schools.value.map((s) => s.state).filter(Boolean))].sort(),

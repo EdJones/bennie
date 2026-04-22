@@ -40,14 +40,14 @@ function formatBoolean(value) {
 
     <div v-else-if="!school" class="not-found">
       School not found.
-      <button class="btn-secondary" @click="router.push('/')">Back to List</button>
+      <button class="btn-secondary" @click="router.back()">Back to List</button>
     </div>
 
     <div v-else>
       <div class="header">
         <h1>{{ school.level === "district" ? school.districtName : school.schoolName }}</h1>
         <div class="header-actions">
-          <button class="btn-secondary" @click="router.push('/')">Back</button>
+          <button class="btn-secondary" @click="router.back()">Back</button>
           <button class="btn-primary" @click="router.push(`/edit/${school.id}`)">Edit</button>
         </div>
       </div>
@@ -57,80 +57,114 @@ function formatBoolean(value) {
         <div v-if="!school.elaCurricula?.length" class="empty-state">
           No curriculum data on record.
         </div>
-        <table v-else class="curricula-table">
-          <thead>
-            <tr>
-              <th>Grades</th>
-              <th>Provider</th>
-              <th>Product</th>
-              <th>Year</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(entry, index) in school.elaCurricula" :key="index">
-              <td>{{ entry.gradeRange || "—" }}</td>
-              <td>{{ entry.provider || "—" }}</td>
-              <td>{{ entry.product || "—" }}</td>
-              <td>{{ entry.year || "—" }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="curriculum-entries">
+          <div v-for="(entry, index) in school.elaCurricula" :key="index" class="curriculum-entry">
+            <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
+            <div v-if="entry.product && entry.provider" class="curriculum-byline">
+              {{ entry.provider }}
+            </div>
+            <div class="chip-group">
+              <span v-if="entry.gradeRange" class="chip chip-meta">{{ entry.gradeRange }}</span>
+              <span v-if="entry.year" class="chip chip-meta">{{ entry.year }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="info-card primary">
         <h2>Screening & Assessment</h2>
 
-        <h3>Progress Monitoring</h3>
-        <dl class="info-grid">
-          <dt>Uses progress monitoring tools?</dt>
-          <dd>{{ formatBoolean(school.usesProgressMonitoring) }}</dd>
-          <template v-if="school.usesProgressMonitoring === true">
-            <template v-if="school.progressMonitoringTools?.length">
-              <dt>Tools</dt>
-              <dd>
-                <ul class="product-list">
-                  <li v-for="tool in school.progressMonitoringTools" :key="tool">{{ tool }}</li>
-                </ul>
-              </dd>
+        <div class="asset-row">
+          <div class="asset-label">Progress Monitoring</div>
+          <div class="asset-value">
+            <span v-if="school.usesProgressMonitoring === false" class="chip chip-no">None</span>
+            <template v-else-if="school.progressMonitoringTools?.length">
+              <div class="chip-group">
+                <span
+                  v-for="tool in school.progressMonitoringTools"
+                  :key="tool"
+                  class="chip chip-tool"
+                  >{{ tool }}</span
+                >
+              </div>
+              <div v-if="school.progressMonitoringFrequency" class="asset-frequency">
+                {{ school.progressMonitoringFrequency }}
+              </div>
             </template>
-            <dt>Frequency</dt>
-            <dd>{{ school.progressMonitoringFrequency || "—" }}</dd>
-          </template>
-        </dl>
+            <span v-else class="chip chip-meta">—</span>
+          </div>
+        </div>
 
-        <h3>Diagnostic Assessments</h3>
-        <dl class="info-grid">
-          <dt>Uses diagnostic assessments?</dt>
-          <dd>{{ formatBoolean(school.usesDiagnosticAssessments) }}</dd>
-          <template v-if="school.usesDiagnosticAssessments === true">
-            <template v-if="school.diagnosticAssessmentTools?.length">
-              <dt>Tools</dt>
-              <dd>
-                <ul class="product-list">
-                  <li v-for="tool in school.diagnosticAssessmentTools" :key="tool">{{ tool }}</li>
-                </ul>
-              </dd>
+        <div class="asset-row">
+          <div class="asset-label">Diagnostic Assessments</div>
+          <div class="asset-value">
+            <span v-if="school.usesDiagnosticAssessments === false" class="chip chip-no">None</span>
+            <template v-else-if="school.diagnosticAssessmentTools?.length">
+              <div class="chip-group">
+                <span
+                  v-for="tool in school.diagnosticAssessmentTools"
+                  :key="tool"
+                  class="chip chip-tool"
+                  >{{ tool }}</span
+                >
+              </div>
+              <div v-if="school.diagnosticAssessmentFrequency" class="asset-frequency">
+                {{ school.diagnosticAssessmentFrequency }}
+              </div>
             </template>
-            <dt>Frequency</dt>
-            <dd>{{ school.diagnosticAssessmentFrequency || "—" }}</dd>
-          </template>
-        </dl>
+            <span v-else class="chip chip-meta">—</span>
+          </div>
+        </div>
       </div>
 
       <div class="info-card primary">
         <h2>Training & Implementation</h2>
-        <dl class="info-grid">
-          <dt>Teachers trained on general ELA curriculum?</dt>
-          <dd>{{ formatBoolean(school.trainingGeneralEla) }}</dd>
-          <dt>Year ELA curriculum first implemented</dt>
-          <dd>{{ school.elaImplementationYear || "—" }}</dd>
-          <dt>Teachers received Science of Reading training?</dt>
-          <dd>{{ formatBoolean(school.trainingScienceOfReading) }}</dd>
-          <template v-if="school.trainingScienceOfReading === true">
-            <dt>Training Program</dt>
-            <dd>{{ school.sorTrainingProgram || "—" }}</dd>
-          </template>
-        </dl>
+
+        <div class="asset-row">
+          <div class="asset-label">ELA Curriculum Training</div>
+          <div class="asset-value">
+            <span
+              class="chip"
+              :class="
+                school.trainingGeneralEla === true
+                  ? 'chip-yes'
+                  : school.trainingGeneralEla === false
+                    ? 'chip-no'
+                    : 'chip-meta'
+              "
+              >{{ formatBoolean(school.trainingGeneralEla) }}</span
+            >
+          </div>
+        </div>
+
+        <div class="asset-row">
+          <div class="asset-label">Science of Reading Training</div>
+          <div class="asset-value">
+            <span
+              class="chip"
+              :class="
+                school.trainingScienceOfReading === true
+                  ? 'chip-yes'
+                  : school.trainingScienceOfReading === false
+                    ? 'chip-no'
+                    : 'chip-meta'
+              "
+              >{{ formatBoolean(school.trainingScienceOfReading) }}</span
+            >
+            <span
+              v-if="school.trainingScienceOfReading === true && school.sorTrainingProgram"
+              class="chip chip-tool"
+              >{{ school.sorTrainingProgram }}</span
+            >
+          </div>
+        </div>
+
+        <div v-if="school.elaImplementationYear" class="asset-row">
+          <div class="asset-label">Implementation Year</div>
+          <div class="asset-value">
+            <span class="chip chip-meta">{{ school.elaImplementationYear }}</span>
+          </div>
+        </div>
       </div>
 
       <div v-if="school.additionalProducts !== null" class="info-card">
@@ -329,10 +363,6 @@ function formatBoolean(value) {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.info-card.primary {
-  border-left: 4px solid #4a90a4;
-}
-
 .info-card.context {
   box-shadow: none;
   border: 1px solid #e8e8e8;
@@ -344,6 +374,10 @@ function formatBoolean(value) {
   font-size: 1.1rem;
   border-bottom: 2px solid #e0e0e0;
   padding-bottom: 0.5rem;
+}
+
+.info-card.primary {
+  border: 1px solid #b8d8e4;
 }
 
 .info-card.primary h2 {
@@ -418,6 +452,110 @@ function formatBoolean(value) {
 .empty-state {
   color: #888;
   font-size: 0.9rem;
+}
+
+/* Chip system */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.chip-tool {
+  background: #e8f4f8;
+  color: #4a90a4;
+}
+
+.chip-meta {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.chip-yes {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.chip-no {
+  background: #f5f5f5;
+  color: #aaa;
+}
+
+/* Curriculum entries */
+.curriculum-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.curriculum-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.curriculum-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.curriculum-byline {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+/* Asset rows (screening, training) */
+.asset-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.asset-row:first-of-type {
+  padding-top: 0;
+}
+
+.asset-row:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.asset-label {
+  width: 11rem;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding-top: 0.3rem;
+}
+
+.asset-value {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.asset-frequency {
+  width: 100%;
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 0.1rem;
 }
 
 .curricula-table {
