@@ -11,7 +11,10 @@
       "WebFetch(domain:www.doe.mass.edu)",
       "WebFetch(domain:data.mass.gov)",
       "Bash(curl -s -I \"https://profiles.doe.mass.edu/statereport/Curriculumdata.aspx\")",
-      "Bash(curl -s \"https://profiles.doe.mass.edu/statereport/Curriculumdata.aspx\")"
+      "Bash(curl -s \"https://profiles.doe.mass.edu/statereport/Curriculumdata.aspx\")",
+      "WebSearch",
+      "WebFetch(domain:reportcard.education.ohio.gov)",
+      "WebFetch(domain:reports.education.ohio.gov)"
     ]
   }
 }
