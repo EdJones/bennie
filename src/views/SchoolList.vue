@@ -69,9 +69,11 @@ const loading = ref(true);
 const selectedState = ref(route.query.state || "");
 const showDropdown = ref(false);
 const dropdownRef = ref(null);
+const searchQuery = ref("");
 
 watch(selectedState, (val) => {
   router.replace({ query: val ? { state: val } : {} });
+  searchQuery.value = "";
 });
 
 function stateLabel(abbr) {
@@ -110,8 +112,13 @@ const totalSchools = computed(() => schools.value.filter((s) => s.level === "sch
 const districtSchoolCount = ref(null);
 
 const filteredSchools = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
   const list = selectedState.value
-    ? schools.value.filter((s) => s.state === selectedState.value)
+    ? schools.value.filter((s) => {
+        if (s.state !== selectedState.value) return false;
+        if (!q) return true;
+        return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
+      })
     : [];
   return [...list].sort((a, b) => {
     const distA = a.districtName ?? "";
@@ -253,7 +260,20 @@ onUnmounted(() => {
 
         <div v-if="!selectedState" class="empty">Select a state above to view records.</div>
 
-        <table v-else class="schools-table">
+        <div v-else class="search-row">
+          <input
+            v-model="searchQuery"
+            class="search-input"
+            type="search"
+            placeholder="Search districts and schools..."
+            autocomplete="off"
+          />
+          <span v-if="searchQuery" class="search-count">
+            {{ filteredSchools.length }} result{{ filteredSchools.length === 1 ? "" : "s" }}
+          </span>
+        </div>
+
+        <table v-if="selectedState" class="schools-table">
           <thead>
             <tr>
               <th>State</th>
@@ -558,6 +578,39 @@ h1 {
   font-size: 0.8rem;
   color: #aaa;
   font-weight: 400;
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  flex: 1;
+  max-width: 400px;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  color: #333;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #4a90a4;
+  box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.12);
+}
+
+.search-count {
+  font-size: 0.8rem;
+  color: #aaa;
 }
 
 .schools-table {
