@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from "vue";
 import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
 import { db } from "../firebase";
-import { collection, addDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { getStates, getDistricts, getSchools } from "../services/nces";
 import { getProviderNames, getProductsForProvider } from "../data/providers";
 import { useAuth } from "../composables/useAuth";
@@ -378,6 +378,10 @@ async function handleSubmit() {
         schoolName: form.value.level === "school" ? form.value.schoolName : null,
         level: form.value.level,
         elaCurricula: form.value.elaCurricula,
+        createdBy: { uid: user.value.uid, email: user.value.email },
+        createdAt: serverTimestamp(),
+        updatedBy: { uid: user.value.uid, email: user.value.email },
+        updatedAt: serverTimestamp(),
       };
       const docRef = await addDoc(collection(db, "schools"), dataToSave);
       await logSchoolCreate(user.value, docRef.id, dataToSave);
@@ -417,6 +421,8 @@ async function handleSubmit() {
         additionalProductTypes:
           form.value.additionalProducts === true ? form.value.additionalProductTypes : [],
         additionalInformation: form.value.additionalInformation || null,
+        updatedBy: { uid: user.value.uid, email: user.value.email },
+        updatedAt: serverTimestamp(),
       };
 
       if (isEdit.value) {

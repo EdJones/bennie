@@ -14,7 +14,15 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, addDoc, query, where } from "firebase/firestore";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc,
+  query,
+  where,
+  Timestamp,
+} from "firebase/firestore";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -198,6 +206,11 @@ async function importData() {
       schoolName: null,
       schoolId: null,
       districtId: "",
+      source: "mn-reads-database",
+      sourceUrl: "https://carei.umn.edu/literacy-products/minnesota-reads-database",
+      sourceOrganization: "CAREI, University of Minnesota",
+      sourceYear: "2021-22",
+      importedAt: Timestamp.now(),
     };
 
     await addDoc(collection(db, "schools"), record);
