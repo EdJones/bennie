@@ -70,6 +70,22 @@ const selectedState = ref(route.query.state || "");
 const showDropdown = ref(false);
 const dropdownRef = ref(null);
 const searchQuery = ref("");
+const selectedCurriculum = ref("");
+
+function getCurriculumLabel(school) {
+  const first = school.elaCurricula?.[0];
+  return first?.product ?? first?.provider ?? "";
+}
+
+const uniqueCurriculumProducts = computed(() => {
+  const products = new Set();
+  for (const school of schools.value) {
+    for (const c of school.elaCurricula ?? []) {
+      if (c.product) products.add(c.product);
+    }
+  }
+  return [...products].sort();
+});
 
 watch(selectedState, (val) => {
   router.replace({ query: val ? { state: val } : {} });
@@ -112,17 +128,23 @@ const totalSchools = computed(() => schools.value.filter((s) => s.level === "sch
 const districtSchoolCount = ref(null);
 
 const filteredSchools = computed(() => {
+  if (!selectedState.value && !selectedCurriculum.value) return [];
   const q = searchQuery.value.trim().toLowerCase();
-  const list = selectedState.value
-    ? schools.value.filter((s) => {
-        if (s.state !== selectedState.value) return false;
-        if (!q) return true;
-        return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
-      })
-    : [];
+  const list = schools.value.filter((s) => {
+    if (selectedState.value && s.state !== selectedState.value) return false;
+    if (selectedCurriculum.value) {
+      if (!s.elaCurricula?.some((c) => c.product === selectedCurriculum.value)) return false;
+    }
+    if (q)
+      return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
+    return true;
+  });
   return [...list].sort((a, b) => {
-    const distA = a.districtName ?? "";
-    const distB = b.districtName ?? "";
+    const stateA = a.state ?? "",
+      stateB = b.state ?? "";
+    if (stateA !== stateB) return stateA.localeCompare(stateB);
+    const distA = a.districtName ?? "",
+      distB = b.districtName ?? "";
     if (distA !== distB) return distA.localeCompare(distB);
     const nameA = a.level === "district" ? "" : (a.schoolName ?? "");
     const nameB = b.level === "district" ? "" : (b.schoolName ?? "");
@@ -223,42 +245,64 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <div class="state-dropdown" ref="dropdownRef">
-          <button
-            class="dropdown-trigger"
-            :class="{ open: showDropdown, active: selectedState }"
-            @click="showDropdown = !showDropdown"
-          >
-            <span v-if="selectedState" class="trigger-label">{{ stateLabel(selectedState) }}</span>
-            <span v-else class="trigger-placeholder">Select a state...</span>
-            <span class="trigger-right">
-              <button
-                v-if="selectedState"
-                class="clear-btn"
-                @click.stop="selectedState = ''"
-                aria-label="Clear selection"
-              >
-                ×
-              </button>
-              <span class="chevron" :class="{ open: showDropdown }"></span>
-            </span>
-          </button>
-
-          <div v-if="showDropdown" class="dropdown-panel">
+        <div class="filters-row">
+          <div class="state-dropdown" ref="dropdownRef">
             <button
-              v-for="s in stateSummary"
-              :key="s.state"
-              class="dropdown-option"
-              :class="{ selected: selectedState === s.state }"
-              @click="selectState(s.state)"
+              class="dropdown-trigger"
+              :class="{ open: showDropdown, active: selectedState }"
+              @click="showDropdown = !showDropdown"
             >
-              <span class="option-name">{{ stateLabel(s.state) }}</span>
-              <span class="option-count">{{ s.total.toLocaleString() }}</span>
+              <span v-if="selectedState" class="trigger-label">{{
+                stateLabel(selectedState)
+              }}</span>
+              <span v-else class="trigger-placeholder">Select a state...</span>
+              <span class="trigger-right">
+                <button
+                  v-if="selectedState"
+                  class="clear-btn"
+                  @click.stop="selectedState = ''"
+                  aria-label="Clear selection"
+                >
+                  ×
+                </button>
+                <span class="chevron" :class="{ open: showDropdown }"></span>
+              </span>
+            </button>
+
+            <div v-if="showDropdown" class="dropdown-panel">
+              <button
+                v-for="s in stateSummary"
+                :key="s.state"
+                class="dropdown-option"
+                :class="{ selected: selectedState === s.state }"
+                @click="selectState(s.state)"
+              >
+                <span class="option-name">{{ stateLabel(s.state) }}</span>
+                <span class="option-count">{{ s.total.toLocaleString() }}</span>
+              </button>
+            </div>
+          </div>
+
+          <span class="filters-or">Or, pick a curricular product.</span>
+
+          <div class="curriculum-filter">
+            <select v-model="selectedCurriculum" class="curriculum-select">
+              <option value="">All curricula</option>
+              <option v-for="p in uniqueCurriculumProducts" :key="p" :value="p">{{ p }}</option>
+            </select>
+            <button
+              v-if="selectedCurriculum"
+              class="clear-curriculum"
+              @click="selectedCurriculum = ''"
+            >
+              ×
             </button>
           </div>
         </div>
 
-        <div v-if="!selectedState" class="empty">Select a state above to view records.</div>
+        <div v-if="!selectedState && !selectedCurriculum" class="empty">
+          Select a state or curriculum to view records.
+        </div>
 
         <div v-else class="search-row">
           <input
@@ -273,12 +317,13 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <table v-if="selectedState" class="schools-table">
+        <table v-if="selectedState || selectedCurriculum" class="schools-table">
           <thead>
             <tr>
               <th>State</th>
               <th>District</th>
               <th>School</th>
+              <th>Curriculum</th>
               <th v-if="isAdmin"></th>
             </tr>
           </thead>
@@ -295,6 +340,7 @@ onUnmounted(() => {
                 {{ school.level === "district" ? school.districtName : school.schoolName }}
                 <span v-if="school.level === 'district'" class="level-badge">District</span>
               </td>
+              <td class="curriculum-cell">{{ getCurriculumLabel(school) }}</td>
               <td v-if="isAdmin" class="actions">
                 <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
               </td>
@@ -364,6 +410,22 @@ onUnmounted(() => {
     max-width: 120px;
     align-self: flex-end;
     margin-top: 0;
+  }
+
+  .filters-row {
+    flex-direction: column;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .filters-or {
+    margin: 0;
+  }
+
+  .state-dropdown,
+  .curriculum-select {
+    width: 100%;
+    min-width: unset;
   }
 
   .schools-table {
@@ -460,10 +522,23 @@ h1 {
   font-weight: 500;
 }
 
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.filters-or {
+  font-size: 0.85rem;
+  color: #999;
+  align-self: center;
+  white-space: nowrap;
+}
+
 .state-dropdown {
   position: relative;
   width: 280px;
-  margin-bottom: 1.5rem;
 }
 
 .dropdown-trigger {
@@ -660,6 +735,57 @@ th {
 
 .btn-delete:hover {
   background-color: #fdd;
+}
+
+.curriculum-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.curriculum-select {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  color: #333;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+  cursor: pointer;
+  width: 280px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.curriculum-select:focus {
+  outline: none;
+  border-color: #4a90a4;
+  box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.12);
+}
+
+.clear-curriculum {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 50%;
+  background: #e0e0e0;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.clear-curriculum:hover {
+  background: #ccc;
+}
+
+.curriculum-cell {
+  color: #555;
+  font-size: 0.9rem;
 }
 
 .level-badge {
