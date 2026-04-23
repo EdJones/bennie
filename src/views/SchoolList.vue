@@ -245,53 +245,59 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <div class="state-dropdown" ref="dropdownRef">
-          <button
-            class="dropdown-trigger"
-            :class="{ open: showDropdown, active: selectedState }"
-            @click="showDropdown = !showDropdown"
-          >
-            <span v-if="selectedState" class="trigger-label">{{ stateLabel(selectedState) }}</span>
-            <span v-else class="trigger-placeholder">Select a state...</span>
-            <span class="trigger-right">
-              <button
-                v-if="selectedState"
-                class="clear-btn"
-                @click.stop="selectedState = ''"
-                aria-label="Clear selection"
-              >
-                ×
-              </button>
-              <span class="chevron" :class="{ open: showDropdown }"></span>
-            </span>
-          </button>
-
-          <div v-if="showDropdown" class="dropdown-panel">
+        <div class="filters-row">
+          <div class="state-dropdown" ref="dropdownRef">
             <button
-              v-for="s in stateSummary"
-              :key="s.state"
-              class="dropdown-option"
-              :class="{ selected: selectedState === s.state }"
-              @click="selectState(s.state)"
+              class="dropdown-trigger"
+              :class="{ open: showDropdown, active: selectedState }"
+              @click="showDropdown = !showDropdown"
             >
-              <span class="option-name">{{ stateLabel(s.state) }}</span>
-              <span class="option-count">{{ s.total.toLocaleString() }}</span>
+              <span v-if="selectedState" class="trigger-label">{{
+                stateLabel(selectedState)
+              }}</span>
+              <span v-else class="trigger-placeholder">Select a state...</span>
+              <span class="trigger-right">
+                <button
+                  v-if="selectedState"
+                  class="clear-btn"
+                  @click.stop="selectedState = ''"
+                  aria-label="Clear selection"
+                >
+                  ×
+                </button>
+                <span class="chevron" :class="{ open: showDropdown }"></span>
+              </span>
+            </button>
+
+            <div v-if="showDropdown" class="dropdown-panel">
+              <button
+                v-for="s in stateSummary"
+                :key="s.state"
+                class="dropdown-option"
+                :class="{ selected: selectedState === s.state }"
+                @click="selectState(s.state)"
+              >
+                <span class="option-name">{{ stateLabel(s.state) }}</span>
+                <span class="option-count">{{ s.total.toLocaleString() }}</span>
+              </button>
+            </div>
+          </div>
+
+          <span class="filters-or">Or, pick a curricular product.</span>
+
+          <div class="curriculum-filter">
+            <select v-model="selectedCurriculum" class="curriculum-select">
+              <option value="">All curricula</option>
+              <option v-for="p in uniqueCurriculumProducts" :key="p" :value="p">{{ p }}</option>
+            </select>
+            <button
+              v-if="selectedCurriculum"
+              class="clear-curriculum"
+              @click="selectedCurriculum = ''"
+            >
+              ×
             </button>
           </div>
-        </div>
-
-        <div class="curriculum-filter">
-          <select v-model="selectedCurriculum" class="curriculum-select">
-            <option value="">All curricula</option>
-            <option v-for="p in uniqueCurriculumProducts" :key="p" :value="p">{{ p }}</option>
-          </select>
-          <button
-            v-if="selectedCurriculum"
-            class="clear-curriculum"
-            @click="selectedCurriculum = ''"
-          >
-            ×
-          </button>
         </div>
 
         <div v-if="!selectedState && !selectedCurriculum" class="empty">
@@ -406,6 +412,22 @@ onUnmounted(() => {
     margin-top: 0;
   }
 
+  .filters-row {
+    flex-direction: column;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .filters-or {
+    margin: 0;
+  }
+
+  .state-dropdown,
+  .curriculum-select {
+    width: 100%;
+    min-width: unset;
+  }
+
   .schools-table {
     font-size: 0.875rem;
   }
@@ -500,10 +522,23 @@ h1 {
   font-weight: 500;
 }
 
+.filters-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.filters-or {
+  font-size: 0.85rem;
+  color: #999;
+  align-self: center;
+  white-space: nowrap;
+}
+
 .state-dropdown {
   position: relative;
   width: 280px;
-  margin-bottom: 1.5rem;
 }
 
 .dropdown-trigger {
@@ -706,7 +741,6 @@ th {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
 }
 
 .curriculum-select {
