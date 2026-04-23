@@ -59,6 +59,7 @@ import { db } from "../firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "../composables/useAuth";
 import { logSchoolDelete } from "../services/activityLog";
+import { getSchoolCountForDistricts } from "../services/nces";
 
 const router = useRouter();
 const route = useRoute();
@@ -68,9 +69,11 @@ const loading = ref(true);
 const selectedState = ref(route.query.state || "");
 const showDropdown = ref(false);
 const dropdownRef = ref(null);
+const searchQuery = ref("");
 
 watch(selectedState, (val) => {
   router.replace({ query: val ? { state: val } : {} });
+  searchQuery.value = "";
 });
 
 function stateLabel(abbr) {
@@ -106,10 +109,16 @@ const stateSummary = computed(() =>
 
 const totalDistricts = computed(() => schools.value.filter((s) => s.level === "district").length);
 const totalSchools = computed(() => schools.value.filter((s) => s.level === "school").length);
+const districtSchoolCount = ref(null);
 
 const filteredSchools = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
   const list = selectedState.value
-    ? schools.value.filter((s) => s.state === selectedState.value)
+    ? schools.value.filter((s) => {
+        if (s.state !== selectedState.value) return false;
+        if (!q) return true;
+        return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
+      })
     : [];
   return [...list].sort((a, b) => {
     const distA = a.districtName ?? "";
@@ -133,6 +142,16 @@ async function fetchSchools() {
     console.error("Error fetching schools:", error);
   }
   loading.value = false;
+
+  const districtsByState = {};
+  for (const s of schools.value.filter(
+    (s) => s.level === "district" && s.districtName && s.state,
+  )) {
+    (districtsByState[s.state] ??= []).push(s.districtName);
+  }
+  getSchoolCountForDistricts(districtsByState).then((count) => {
+    districtSchoolCount.value = count;
+  });
 }
 
 async function deleteSchool(id) {
@@ -187,7 +206,13 @@ onUnmounted(() => {
             <div class="summary-label">Districts</div>
           </div>
           <div class="summary-card">
-            <div class="summary-value">{{ totalSchools }}</div>
+            <div class="summary-value">
+              {{
+                districtSchoolCount !== null
+                  ? "~" + districtSchoolCount.toLocaleString()
+                  : totalSchools
+              }}
+            </div>
             <div class="summary-label">Schools</div>
           </div>
         </div>
@@ -235,29 +260,43 @@ onUnmounted(() => {
 
         <div v-if="!selectedState" class="empty">Select a state above to view records.</div>
 
-        <table v-else class="schools-table">
+        <div v-else class="search-row">
+          <input
+            v-model="searchQuery"
+            class="search-input"
+            type="search"
+            placeholder="Search districts and schools..."
+            autocomplete="off"
+          />
+          <span v-if="searchQuery" class="search-count">
+            {{ filteredSchools.length }} result{{ filteredSchools.length === 1 ? "" : "s" }}
+          </span>
+        </div>
+
+        <table v-if="selectedState" class="schools-table">
           <thead>
             <tr>
               <th>State</th>
               <th>District</th>
               <th>School</th>
-              <th>Actions</th>
+              <th v-if="isAdmin"></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="school in filteredSchools" :key="school.id">
+            <tr
+              v-for="school in filteredSchools"
+              :key="school.id"
+              class="clickable-row"
+              @click="router.push(`/view/${school.id}`)"
+            >
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
               <td>
                 {{ school.level === "district" ? school.districtName : school.schoolName }}
                 <span v-if="school.level === 'district'" class="level-badge">District</span>
               </td>
-              <td class="actions">
-                <button class="btn-view" @click="router.push(`/view/${school.id}`)">View</button>
-                <button class="btn-edit" @click="router.push(`/edit/${school.id}`)">Edit</button>
-                <button v-if="isAdmin" class="btn-delete" @click="deleteSchool(school.id)">
-                  Delete
-                </button>
+              <td v-if="isAdmin" class="actions">
+                <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
               </td>
             </tr>
           </tbody>
@@ -385,22 +424,22 @@ h1 {
 .summary-card {
   flex: 1;
   background: white;
-  padding: 1.25rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
 .summary-value {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
 
 .summary-label {
-  font-size: 0.8rem;
-  color: #666;
+  font-size: 0.7rem;
+  color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -542,6 +581,39 @@ h1 {
   font-weight: 400;
 }
 
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.search-input {
+  flex: 1;
+  max-width: 400px;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: white;
+  color: #333;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #4a90a4;
+  box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.12);
+}
+
+.search-count {
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
 .schools-table {
   width: 100%;
   border-collapse: collapse;
@@ -564,44 +636,24 @@ th {
   color: #555;
 }
 
-tr:hover {
-  background-color: #f8f9fa;
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-view,
-.btn-edit,
-.btn-delete {
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.875rem;
+.clickable-row {
   cursor: pointer;
 }
 
-.btn-view {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+.clickable-row:hover {
+  background-color: #f5f9fb;
 }
 
-.btn-view:hover {
-  background-color: #c8e6c9;
-}
-
-.btn-edit {
-  background-color: #e8f4f8;
-  color: #4a90a4;
-}
-
-.btn-edit:hover {
-  background-color: #d0e8f0;
+.actions {
+  text-align: right;
 }
 
 .btn-delete {
+  padding: 0.3rem 0.7rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
   background-color: #fee;
   color: #c44;
 }

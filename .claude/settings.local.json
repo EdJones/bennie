@@ -14,7 +14,9 @@
       "Bash(curl -s \"https://profiles.doe.mass.edu/statereport/Curriculumdata.aspx\")",
       "WebSearch",
       "WebFetch(domain:reportcard.education.ohio.gov)",
-      "WebFetch(domain:reports.education.ohio.gov)"
+      "WebFetch(domain:reports.education.ohio.gov)",
+      "WebFetch(domain:www.cde.state.co.us)",
+      "WebFetch(domain:ed.cde.state.co.us)"
     ]
   }
 }
