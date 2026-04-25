@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { getInterventionProductNames } from "../data/interventionProducts";
 
 const STATE_NAMES = {
   AL: "Alabama",
@@ -71,6 +72,8 @@ const showDropdown = ref(false);
 const dropdownRef = ref(null);
 const searchQuery = ref("");
 const selectedCurriculum = ref("");
+const selectedIntervention = ref("");
+const interventionProducts = getInterventionProductNames();
 
 function getCurriculumLabel(school) {
   const first = school.elaCurricula?.[0];
@@ -128,12 +131,15 @@ const totalSchools = computed(() => schools.value.filter((s) => s.level === "sch
 const districtSchoolCount = ref(null);
 
 const filteredSchools = computed(() => {
-  if (!selectedState.value && !selectedCurriculum.value) return [];
+  if (!selectedState.value && !selectedCurriculum.value && !selectedIntervention.value) return [];
   const q = searchQuery.value.trim().toLowerCase();
   const list = schools.value.filter((s) => {
     if (selectedState.value && s.state !== selectedState.value) return false;
     if (selectedCurriculum.value) {
       if (!s.elaCurricula?.some((c) => c.product === selectedCurriculum.value)) return false;
+    }
+    if (selectedIntervention.value) {
+      if (!s.interventionProducts?.includes(selectedIntervention.value)) return false;
     }
     if (q)
       return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
@@ -300,7 +306,25 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-if="!selectedState && !selectedCurriculum" class="empty">
+        <div class="filters-row">
+          <span class="filters-or">Or, pick an intervention product.</span>
+
+          <div class="curriculum-filter">
+            <select v-model="selectedIntervention" class="curriculum-select">
+              <option value="">All intervention products</option>
+              <option v-for="p in interventionProducts" :key="p" :value="p">{{ p }}</option>
+            </select>
+            <button
+              v-if="selectedIntervention"
+              class="clear-curriculum"
+              @click="selectedIntervention = ''"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div v-if="!selectedState && !selectedCurriculum && !selectedIntervention" class="empty">
           Select a state or curriculum to view records.
         </div>
 
@@ -317,7 +341,10 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <table v-if="selectedState || selectedCurriculum" class="schools-table">
+        <table
+          v-if="selectedState || selectedCurriculum || selectedIntervention"
+          class="schools-table"
+        >
           <thead>
             <tr>
               <th>State</th>
