@@ -307,7 +307,7 @@ onUnmounted(() => {
         </div>
 
         <div class="filters-row">
-          <span class="filters-or">Or, pick an intervention product.</span>
+          <span class="filters-or">Or, explore intervention products.</span>
 
           <div class="curriculum-filter">
             <select v-model="selectedIntervention" class="curriculum-select">
@@ -349,8 +349,9 @@ onUnmounted(() => {
             <tr>
               <th>State</th>
               <th>District</th>
-              <th>School</th>
+              <th v-if="!selectedIntervention">School</th>
               <th>Curriculum</th>
+              <th v-if="selectedIntervention">Interventions</th>
               <th v-if="isAdmin"></th>
             </tr>
           </thead>
@@ -363,11 +364,20 @@ onUnmounted(() => {
             >
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
-              <td>
+              <td v-if="!selectedIntervention">
                 {{ school.level === "district" ? school.districtName : school.schoolName }}
                 <span v-if="school.level === 'district'" class="level-badge">District</span>
               </td>
               <td class="curriculum-cell">{{ getCurriculumLabel(school) }}</td>
+              <td v-if="selectedIntervention" class="interventions-cell">
+                <span
+                  v-for="p in school.interventionProducts"
+                  :key="p"
+                  class="intervention-tag"
+                  :class="{ highlight: p === selectedIntervention }"
+                  >{{ p }}</span
+                >
+              </td>
               <td v-if="isAdmin" class="actions">
                 <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
               </td>
@@ -825,5 +835,26 @@ th {
   font-size: 0.75rem;
   font-weight: 500;
   vertical-align: middle;
+}
+
+.interventions-cell {
+  font-size: 0.85rem;
+}
+
+.intervention-tag {
+  display: inline-block;
+  margin: 0.1rem 0.2rem 0.1rem 0;
+  padding: 0.15rem 0.45rem;
+  background-color: #f0f4e8;
+  color: #5a7a2e;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.intervention-tag.highlight {
+  background-color: #d4e8b0;
+  color: #3a5a1a;
+  font-weight: 600;
 }
 </style>
