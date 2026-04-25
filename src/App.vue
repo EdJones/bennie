@@ -1,13 +1,13 @@
 <script setup>
-import { useAuth } from './composables/useAuth'
-import { useRouter } from 'vue-router'
+import { useAuth } from "./composables/useAuth";
+import { useRouter } from "vue-router";
 
-const router = useRouter()
-const { user, isAdmin, logout } = useAuth()
+const router = useRouter();
+const { user, isAdmin, logout } = useAuth();
 
 async function handleLogout() {
-  await logout()
-  router.push('/login')
+  await logout();
+  router.push("/login");
 }
 </script>
 
@@ -15,18 +15,21 @@ async function handleLogout() {
   <div id="app">
     <header>
       <div class="header-content">
-        <div class="header-left">
+        <a class="header-left" @click.prevent="router.push('/')">
           <img src="/bennie.png" alt="Bennie the school detective dog" class="logo" />
           <div class="header-text">
             <h1>Bennett</h1>
             <p class="subtitle">The National Survey of School Reading Curricula</p>
           </div>
-        </div>
-        <div v-if="user" class="header-right">
-          <span class="user-email">{{ user.email }}</span>
-          <button class="header-btn" @click="router.push('/issues')">Issues</button>
-          <button v-if="isAdmin" class="header-btn" @click="router.push('/admin')">Admin</button>
-          <button class="header-btn" @click="handleLogout">Logout</button>
+        </a>
+        <div class="header-right">
+          <button class="header-btn" @click="router.push('/interventions')">Interventions</button>
+          <template v-if="user">
+            <span class="user-email">{{ user.email }}</span>
+            <button class="header-btn" @click="router.push('/issues')">Issues</button>
+            <button v-if="isAdmin" class="header-btn" @click="router.push('/admin')">Admin</button>
+            <button class="header-btn" @click="handleLogout">Logout</button>
+          </template>
         </div>
       </div>
     </header>
@@ -56,6 +59,9 @@ header {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 .header-right {
@@ -95,7 +101,7 @@ header {
 
 header h1 {
   margin: 0;
-  font-family: 'Baloo 2', cursive;
+  font-family: "Baloo 2", cursive;
   font-weight: 700;
   font-size: 2.5rem;
   letter-spacing: 1px;

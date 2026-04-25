@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { getInterventionProductNames } from "../data/interventionProducts";
 
 const STATE_NAMES = {
   AL: "Alabama",
@@ -71,6 +72,8 @@ const showDropdown = ref(false);
 const dropdownRef = ref(null);
 const searchQuery = ref("");
 const selectedCurriculum = ref("");
+const selectedIntervention = ref("");
+const interventionProducts = getInterventionProductNames();
 
 function getCurriculumLabel(school) {
   const first = school.elaCurricula?.[0];
@@ -128,12 +131,15 @@ const totalSchools = computed(() => schools.value.filter((s) => s.level === "sch
 const districtSchoolCount = ref(null);
 
 const filteredSchools = computed(() => {
-  if (!selectedState.value && !selectedCurriculum.value) return [];
+  if (!selectedState.value && !selectedCurriculum.value && !selectedIntervention.value) return [];
   const q = searchQuery.value.trim().toLowerCase();
   const list = schools.value.filter((s) => {
     if (selectedState.value && s.state !== selectedState.value) return false;
     if (selectedCurriculum.value) {
       if (!s.elaCurricula?.some((c) => c.product === selectedCurriculum.value)) return false;
+    }
+    if (selectedIntervention.value) {
+      if (!s.interventionProducts?.includes(selectedIntervention.value)) return false;
     }
     if (q)
       return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
@@ -300,7 +306,25 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-if="!selectedState && !selectedCurriculum" class="empty">
+        <div class="filters-row">
+          <span class="filters-or">Or, explore intervention products.</span>
+
+          <div class="curriculum-filter">
+            <select v-model="selectedIntervention" class="curriculum-select">
+              <option value="">All intervention products</option>
+              <option v-for="p in interventionProducts" :key="p" :value="p">{{ p }}</option>
+            </select>
+            <button
+              v-if="selectedIntervention"
+              class="clear-curriculum"
+              @click="selectedIntervention = ''"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+
+        <div v-if="!selectedState && !selectedCurriculum && !selectedIntervention" class="empty">
           Select a state or curriculum to view records.
         </div>
 
@@ -317,13 +341,17 @@ onUnmounted(() => {
           </span>
         </div>
 
-        <table v-if="selectedState || selectedCurriculum" class="schools-table">
+        <table
+          v-if="selectedState || selectedCurriculum || selectedIntervention"
+          class="schools-table"
+        >
           <thead>
             <tr>
               <th>State</th>
               <th>District</th>
-              <th>School</th>
+              <th v-if="!selectedIntervention">School</th>
               <th>Curriculum</th>
+              <th v-if="selectedIntervention">Interventions</th>
               <th v-if="isAdmin"></th>
             </tr>
           </thead>
@@ -336,11 +364,20 @@ onUnmounted(() => {
             >
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
-              <td>
+              <td v-if="!selectedIntervention">
                 {{ school.level === "district" ? school.districtName : school.schoolName }}
                 <span v-if="school.level === 'district'" class="level-badge">District</span>
               </td>
               <td class="curriculum-cell">{{ getCurriculumLabel(school) }}</td>
+              <td v-if="selectedIntervention" class="interventions-cell">
+                <span
+                  v-for="p in school.interventionProducts"
+                  :key="p"
+                  class="intervention-tag"
+                  :class="{ highlight: p === selectedIntervention }"
+                  >{{ p }}</span
+                >
+              </td>
               <td v-if="isAdmin" class="actions">
                 <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
               </td>
@@ -798,5 +835,26 @@ th {
   font-size: 0.75rem;
   font-weight: 500;
   vertical-align: middle;
+}
+
+.interventions-cell {
+  font-size: 0.85rem;
+}
+
+.intervention-tag {
+  display: inline-block;
+  margin: 0.1rem 0.2rem 0.1rem 0;
+  padding: 0.15rem 0.45rem;
+  background-color: #f0f4e8;
+  color: #5a7a2e;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.intervention-tag.highlight {
+  background-color: #d4e8b0;
+  color: #3a5a1a;
+  font-weight: 600;
 }
 </style>

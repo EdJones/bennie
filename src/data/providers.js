@@ -1,3 +1,7 @@
+// NOTE: The category comments below are approximate and likely don't reflect how
+// these products are actually used or classified in the field. Many products span
+// multiple use cases (e.g., intervention vs. core, phonics vs. comprehensive).
+// Treat them as loose groupings, not authoritative taxonomy.
 export const foundationsProviders = [
   // Major Publishers
   {
