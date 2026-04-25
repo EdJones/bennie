@@ -22,11 +22,14 @@ async function handleLogout() {
             <p class="subtitle">The National Survey of School Reading Curricula</p>
           </div>
         </a>
-        <div v-if="user" class="header-right">
-          <span class="user-email">{{ user.email }}</span>
-          <button class="header-btn" @click="router.push('/issues')">Issues</button>
-          <button v-if="isAdmin" class="header-btn" @click="router.push('/admin')">Admin</button>
-          <button class="header-btn" @click="handleLogout">Logout</button>
+        <div class="header-right">
+          <button class="header-btn" @click="router.push('/interventions')">Interventions</button>
+          <template v-if="user">
+            <span class="user-email">{{ user.email }}</span>
+            <button class="header-btn" @click="router.push('/issues')">Issues</button>
+            <button v-if="isAdmin" class="header-btn" @click="router.push('/admin')">Admin</button>
+            <button class="header-btn" @click="handleLogout">Logout</button>
+          </template>
         </div>
       </div>
     </header>
