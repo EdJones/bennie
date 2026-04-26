@@ -70,11 +70,46 @@ export const curriculumCategories = [
       },
       {
         name: "ELA Guidebooks",
-        products: ["ELA Guidebooks", "LearnZillion Guidebooks", "Guidebooks 2.0"],
+        products: [
+          "ELA Guidebooks",
+          "Louisiana ELA Guidebooks",
+          "LearnZillion Guidebooks",
+          "Guidebooks 2.0",
+        ],
       },
       {
         name: "Bookworms",
-        products: ["Bookworms K-5", "Bookworms", "OUR Bookworms K-5 Reading & Writing"],
+        products: [
+          "Bookworms K-5",
+          "Bookworms",
+          "OUR Bookworms K-5 Reading & Writing",
+          "Bookworms Reading and Writing",
+        ],
+      },
+      {
+        name: "ARC Core",
+        products: [
+          "ARC Core",
+          "ARC (American Reading Company) Core",
+          "American Reading Company Core",
+          "IRLA",
+        ],
+      },
+      {
+        name: "Fishtank ELA",
+        products: [
+          "Fishtank ELA",
+          "Fishtank Plus ELA",
+          "Fishtank Plus Curriculum",
+          "Fishtank ELA K-2",
+          "Fishtank ELA K-4",
+          "Fishtank K-4",
+          "Fish Tank Plus",
+        ],
+      },
+      {
+        name: "Reading Reconsidered",
+        products: ["Reading Reconsidered"],
       },
     ],
   },
