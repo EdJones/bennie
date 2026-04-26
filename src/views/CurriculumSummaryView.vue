@@ -103,7 +103,11 @@ const tableData = computed(() => {
   for (const school of schoolList) {
     const product = school.elaCurricula?.[0]?.product;
     const match = product ? getProgramForProduct(product) : null;
-    const key = match ? `${match.categoryName}||${match.programName}` : "__homegrown__";
+    const key = match
+      ? `${match.categoryName}||${match.programName}`
+      : product
+        ? "__homegrown__"
+        : "__no_data__";
     programCounts[key] = (programCounts[key] ?? 0) + 1;
   }
 
@@ -136,21 +140,61 @@ const tableData = computed(() => {
   }
 
   const homegrownCount = programCounts["__homegrown__"] ?? 0;
+  const noDataCount = programCounts["__no_data__"] ?? 0;
+  const homegrownTotal = homegrownCount + noDataCount;
   rows.push({
     isFirstInCategory: true,
-    categoryRowspan: 1,
+    categoryRowspan: 2,
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
     categoryTextColor: homegrownCategory.textColor,
-    catTotal: homegrownCount,
-    programName: '"Supplemental Bundle"',
+    catTotal: homegrownTotal,
+    programName: "Supplemental Bundle",
     count: homegrownCount,
     shareOfAdoptions: pct(homegrownCount, total),
-    categoryShare: pct(homegrownCount, total),
+    categoryShare: pct(homegrownTotal, total),
+  });
+  rows.push({
+    isFirstInCategory: false,
+    categoryName: homegrownCategory.name,
+    categoryColor: homegrownCategory.color,
+    catTotal: homegrownTotal,
+    programName: "No curriculum recorded",
+    programNameMuted: true,
+    count: noDataCount,
+    shareOfAdoptions: pct(noDataCount, total),
+    categoryShare: pct(homegrownTotal, total),
   });
 
   return { rows, total };
 });
+
+const unmatchedProducts = computed(() => {
+  const counts = {};
+  for (const school of filteredSchools.value) {
+    const product = school.elaCurricula?.[0]?.product;
+    if (product && !getProgramForProduct(product)) {
+      counts[product] = (counts[product] ?? 0) + 1;
+    }
+  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+});
+
+const noDataByProvider = computed(() => {
+  const counts = {};
+  for (const school of filteredSchools.value) {
+    const entry = school.elaCurricula?.[0];
+    if (!entry?.product) {
+      const key = entry?.provider || "(no provider)";
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+});
+
+const hasHomegrownDetail = computed(
+  () => unmatchedProducts.value.length > 0 || noDataByProvider.value.length > 0,
+);
 </script>
 
 <template>
@@ -198,7 +242,9 @@ const tableData = computed(() => {
           >
             {{ row.categoryName }}
           </td>
-          <td class="program-cell">{{ row.programName }}</td>
+          <td class="program-cell" :class="{ muted: row.programNameMuted }">
+            {{ row.programName }}
+          </td>
           <td class="number-cell">{{ row.count > 0 ? row.count.toLocaleString() : "0" }}</td>
           <td class="number-cell">{{ row.shareOfAdoptions }}</td>
           <td
@@ -217,6 +263,48 @@ const tableData = computed(() => {
       Each record is assigned to a category based on its primary curriculum. Records without a
       recognized curriculum appear under Homegrown.
     </p>
+
+    <details v-if="!loading && hasHomegrownDetail" class="homegrown-detail">
+      <summary>What's in the Homegrown category?</summary>
+
+      <div class="detail-sections">
+        <div v-if="unmatchedProducts.length > 0" class="detail-section">
+          <h3>Supplemental Bundle — unmatched product strings</h3>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Product string</th>
+                <th class="col-number">Records</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="[product, count] in unmatchedProducts" :key="product">
+                <td>{{ product }}</td>
+                <td class="number-cell">{{ count.toLocaleString() }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-if="noDataByProvider.length > 0" class="detail-section">
+          <h3>No curriculum recorded — breakdown by provider</h3>
+          <table class="detail-table">
+            <thead>
+              <tr>
+                <th>Provider</th>
+                <th class="col-number">Records</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="[provider, count] in noDataByProvider" :key="provider">
+                <td :class="{ muted: provider === '(no provider)' }">{{ provider }}</td>
+                <td class="number-cell">{{ count.toLocaleString() }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   </div>
 </template>
 
@@ -366,6 +454,11 @@ tr:last-child td {
   font-size: 0.9rem;
 }
 
+.program-cell.muted {
+  color: #aaa;
+  font-style: italic;
+}
+
 .number-cell {
   color: #555;
   font-size: 0.9rem;
@@ -382,6 +475,84 @@ tr:last-child td {
 .footnote {
   font-size: 0.8rem;
   color: #aaa;
-  margin: 0;
+  margin: 0 0 1.5rem;
+}
+
+.homegrown-detail {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: white;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+}
+
+.homegrown-detail > summary {
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.homegrown-detail > summary::before {
+  content: "▶";
+  font-size: 0.65rem;
+  color: #aaa;
+  transition: transform 0.15s;
+}
+
+.homegrown-detail[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.detail-sections {
+  padding: 0 1rem 1rem;
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.detail-section {
+  flex: 1;
+  min-width: 260px;
+}
+
+.detail-section h3 {
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999;
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.detail-table th {
+  background: #f8f9fa;
+  padding: 0.4rem 0.6rem;
+  color: #666;
+  font-weight: 600;
+  border-bottom: 1px solid #e8e8e8;
+  text-align: left;
+}
+
+.detail-table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+}
+
+.detail-table tr:last-child td {
+  border-bottom: none;
 }
 </style>
