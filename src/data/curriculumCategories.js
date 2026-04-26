@@ -274,7 +274,7 @@ function normalize(str) {
     .replace(/\s*&\s*/g, " and ")
     .replace(/,?\s*(20\d{2})\b/g, "")
     .replace(
-      /^(hmh|houghton mifflin harcourt'?s?|houghton mifflin'?s?|mcgraw.?hill'?s?|amplify|savvas|pearson|imagine learning|openup resources|learnzillion|our|lucy calkins:?)\s+/i,
+      /^(hmh|houghton[ /-]mifflin[ /-]?harcourt'?s?|houghton[ /-]mifflin'?s?|mcgraw.?hill'?s?|amplify|savvas|pearson|imagine learning|openup resources|learnzillion|our|lucy calkins:?)[\s-]+/i,
       "",
     )
     .replace(
@@ -298,6 +298,19 @@ export function getProgramForProduct(product) {
   for (const category of curriculumCategories) {
     for (const program of category.programs) {
       if (program.products.some((p) => normalize(p) === norm)) {
+        return { categoryName: category.name, programName: program.name };
+      }
+    }
+  }
+  // Prefix match: "Journeys K-5" → "journeys k-5" starts with "journeys " → Journeys
+  for (const category of curriculumCategories) {
+    for (const program of category.programs) {
+      if (
+        program.products.some((p) => {
+          const np = normalize(p);
+          return np.length >= 4 && norm.startsWith(np + " ");
+        })
+      ) {
         return { categoryName: category.name, programName: program.name };
       }
     }
