@@ -143,6 +143,15 @@ export const curriculumCategories = [
         products: ["SIPPS", "SIPPS Beginning", "SIPPS Extension", "SIPPS Plus", "SIPPS Challenge"],
       },
       {
+        name: "Amplify CKLA K-2 Skills",
+        products: [
+          "Amplify CKLA K-2 Skills",
+          "CKLA K-2 Skills",
+          "Amplify CKLA Skills K-2",
+          "CKLA Skills K-2",
+        ],
+      },
+      {
         name: "UFLI Foundations",
         products: [
           "UFLI Foundations",
