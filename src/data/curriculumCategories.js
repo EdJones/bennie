@@ -41,7 +41,12 @@ export const curriculumCategories = [
       { name: "Wit & Wisdom", products: ["Wit & Wisdom", "Geodes"] },
       {
         name: "Core Knowledge (CKLA)",
-        products: ["Core Knowledge Language Arts (CKLA)", "CKLA Skills", "CKLA Knowledge"],
+        products: [
+          "Core Knowledge Language Arts (CKLA)",
+          "CKLA Skills",
+          "CKLA Knowledge",
+          "Amplify CKLA K-5 Core Comprehensive",
+        ],
       },
       { name: "ELA Guidebooks", products: ["ELA Guidebooks"] },
       { name: "Bookworms", products: ["Bookworms K-5"] },
