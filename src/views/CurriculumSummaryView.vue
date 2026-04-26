@@ -140,6 +140,7 @@ const tableData = computed(() => {
       catRows.push({ programName: prog.name, count });
     }
 
+    catRows.sort((a, b) => b.count - a.count);
     catRows.forEach((row, i) => {
       rows.push({
         ...row,
@@ -214,6 +215,76 @@ const noDataByProvider = computed(() => {
 const hasHomegrownDetail = computed(
   () => unmatchedProducts.value.length > 0 || noDataByProvider.value.length > 0,
 );
+
+const COLLAPSE_THRESHOLD = 10;
+const expandedCategories = ref(new Set());
+
+function toggleCategory(name) {
+  const s = new Set(expandedCategories.value);
+  if (s.has(name)) s.delete(name);
+  else s.add(name);
+  expandedCategories.value = s;
+}
+
+const visibleRows = computed(() => {
+  const result = [];
+  const allRows = tableData.value.rows;
+  let i = 0;
+
+  while (i < allRows.length) {
+    const row = allRows[i];
+
+    if (!row.isFirstInCategory) {
+      result.push(row);
+      i++;
+      continue;
+    }
+
+    // Gather all sibling rows for this category
+    const catRows = [row];
+    let j = i + 1;
+    while (j < allRows.length && !allRows[j].isFirstInCategory) {
+      catRows.push(allRows[j]);
+      j++;
+    }
+
+    const total = catRows.length;
+    const isCollapsible = total > COLLAPSE_THRESHOLD;
+    const isExpanded = expandedCategories.value.has(row.categoryName);
+
+    if (isCollapsible && !isExpanded) {
+      // Show first 10 rows; bump rowspan by 1 to cover the toggle row
+      const visible = catRows.slice(0, COLLAPSE_THRESHOLD);
+      visible[0] = { ...visible[0], categoryRowspan: COLLAPSE_THRESHOLD + 1 };
+      result.push(...visible);
+      result.push({
+        isToggleRow: true,
+        isExpanded: false,
+        categoryName: row.categoryName,
+        categoryColor: row.categoryColor,
+        hidden: total - COLLAPSE_THRESHOLD,
+      });
+    } else {
+      // Expanded: show all rows; bump rowspan by 1 for the collapse toggle row
+      const adjusted = catRows.map((r, idx) =>
+        idx === 0 && isCollapsible ? { ...r, categoryRowspan: total + 1 } : r,
+      );
+      result.push(...adjusted);
+      if (isCollapsible) {
+        result.push({
+          isToggleRow: true,
+          isExpanded: true,
+          categoryName: row.categoryName,
+          categoryColor: row.categoryColor,
+        });
+      }
+    }
+
+    i = j;
+  }
+
+  return result;
+});
 </script>
 
 <template>
@@ -252,28 +323,37 @@ const hasHomegrownDetail = computed(
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(row, i) in tableData.rows" :key="i" :style="{ background: row.categoryColor }">
-          <td
-            v-if="row.isFirstInCategory"
-            :rowspan="row.categoryRowspan"
-            :style="{ background: row.categoryColor, color: row.categoryTextColor }"
-            class="category-cell"
-          >
-            {{ row.categoryName }}
-          </td>
-          <td class="program-cell" :class="{ muted: row.programNameMuted }">
-            {{ row.programName }}
-          </td>
-          <td class="number-cell">{{ row.count > 0 ? row.count.toLocaleString() : "0" }}</td>
-          <td class="number-cell">{{ row.shareOfAdoptions }}</td>
-          <td
-            v-if="row.isFirstInCategory"
-            :rowspan="row.categoryRowspan"
-            :style="{ background: row.categoryColor }"
-            class="category-share-cell"
-          >
-            <strong>{{ row.categoryShare }}</strong>
-          </td>
+        <tr v-for="(row, i) in visibleRows" :key="i" :style="{ background: row.categoryColor }">
+          <template v-if="row.isToggleRow">
+            <!-- cols 1 and 5 are covered by rowspan from the category above -->
+            <td colspan="3" class="toggle-cell" @click="toggleCategory(row.categoryName)">
+              <span v-if="!row.isExpanded">Show {{ row.hidden }} more ▾</span>
+              <span v-else>Show less ▴</span>
+            </td>
+          </template>
+          <template v-else>
+            <td
+              v-if="row.isFirstInCategory"
+              :rowspan="row.categoryRowspan"
+              :style="{ background: row.categoryColor, color: row.categoryTextColor }"
+              class="category-cell"
+            >
+              {{ row.categoryName }}
+            </td>
+            <td class="program-cell" :class="{ muted: row.programNameMuted }">
+              {{ row.programName }}
+            </td>
+            <td class="number-cell">{{ row.count > 0 ? row.count.toLocaleString() : "0" }}</td>
+            <td class="number-cell">{{ row.shareOfAdoptions }}</td>
+            <td
+              v-if="row.isFirstInCategory"
+              :rowspan="row.categoryRowspan"
+              :style="{ background: row.categoryColor }"
+              class="category-share-cell"
+            >
+              <strong>{{ row.categoryShare }}</strong>
+            </td>
+          </template>
         </tr>
       </tbody>
     </table>
@@ -489,6 +569,22 @@ tr:last-child td {
   font-variant-numeric: tabular-nums;
   border-left: 1px solid rgba(0, 0, 0, 0.06);
   vertical-align: middle;
+}
+
+.toggle-cell {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a90a4;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  letter-spacing: 0.01em;
+}
+
+.toggle-cell:hover {
+  color: #2d6b7f;
+  text-decoration: underline;
 }
 
 .footnote {
