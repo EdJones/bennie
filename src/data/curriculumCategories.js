@@ -16,8 +16,8 @@ export const curriculumCategories = [
     color: "#fef9e7",
     textColor: "#7a5a00",
     programs: [
-      { name: "Into Reading", products: ["Into Reading"] },
-      { name: "Wonders", products: ["Wonders"] },
+      { name: "Into Reading", products: ["Into Reading", "HMH Into Reading 2020"] },
+      { name: "Wonders", products: ["Wonders", "Wonders 2020", "Wonders 2023"] },
       { name: "Benchmark Workshop", products: ["Benchmark Workshop"] },
       { name: "Benchmark Advance", products: ["Benchmark Advance", "ReadyGEN"] },
       { name: "myView Literacy", products: ["myView Literacy"] },
@@ -46,6 +46,7 @@ export const curriculumCategories = [
           "CKLA Skills",
           "CKLA Knowledge",
           "Amplify CKLA K-5 Core Comprehensive",
+          "Amplify CKLA Skills, 2020",
         ],
       },
       { name: "ELA Guidebooks", products: ["ELA Guidebooks"] },
@@ -65,7 +66,11 @@ export const curriculumCategories = [
       },
       {
         name: "UFLI Foundations",
-        products: ["UFLI Foundations", "UFLI Virtual Teaching Resource Hub"],
+        products: [
+          "UFLI Foundations",
+          "UFLI Virtual Teaching Resource Hub",
+          "UFLI Foundations: An Explicit and Systematic Phonics Program",
+        ],
       },
       {
         name: "Heggerty",
