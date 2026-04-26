@@ -176,10 +176,32 @@ export const homegrownCategory = {
   textColor: "#8b2020",
 };
 
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .replace(/\s*&\s*/g, " and ")
+    .replace(/,?\s*(20\d{2})\b/g, "")
+    .replace(
+      /^(hmh|houghton mifflin harcourt'?s?|mcgraw.?hill'?s?|amplify|savvas|pearson|imagine learning|openup resources|learnzillion|our)\s+/i,
+      "",
+    )
+    .replace(/[,.:!?]+$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function getProgramForProduct(product) {
   for (const category of curriculumCategories) {
     for (const program of category.programs) {
       if (program.products.includes(product)) {
+        return { categoryName: category.name, programName: program.name };
+      }
+    }
+  }
+  const norm = normalize(product);
+  for (const category of curriculumCategories) {
+    for (const program of category.programs) {
+      if (program.products.some((p) => normalize(p) === norm)) {
         return { categoryName: category.name, programName: program.name };
       }
     }
