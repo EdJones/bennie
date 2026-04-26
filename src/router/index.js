@@ -7,6 +7,7 @@ import LoginView from "../views/LoginView.vue";
 import AdminPanel from "../views/AdminPanel.vue";
 import IssuesTracker from "../views/IssuesTracker.vue";
 import InterventionsView from "../views/InterventionsView.vue";
+import CurriculumSummaryView from "../views/CurriculumSummaryView.vue";
 
 const routes = [
   {
@@ -56,6 +57,12 @@ const routes = [
     name: "issues",
     component: IssuesTracker,
     meta: { requiresAuth: true },
+  },
+  {
+    path: "/summary",
+    name: "summary",
+    component: CurriculumSummaryView,
+    meta: { requiresAuth: false },
   },
 ];
 

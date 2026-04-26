@@ -1,84 +1,94 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { db } from '../firebase'
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
-import { useAuth } from '../composables/useAuth'
+import { ref, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import { db } from "../firebase";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { useAuth } from "../composables/useAuth";
 
-const router = useRouter()
-const { isAdmin, loading: authLoading } = useAuth()
-const activities = ref([])
-const loading = ref(true)
-const totalSchools = ref(0)
-const totalUsers = ref(0)
-const dataLoaded = ref(false)
+const router = useRouter();
+const { isAdmin, loading: authLoading } = useAuth();
+const activities = ref([]);
+const loading = ref(true);
+const totalSchools = ref(0);
+const totalUsers = ref(0);
+const dataLoaded = ref(false);
 
 async function loadData() {
   // Prevent double-loading
-  if (dataLoaded.value) return
-  dataLoaded.value = true
+  if (dataLoaded.value) return;
+  dataLoaded.value = true;
 
   if (!isAdmin.value) {
-    router.push('/')
-    return
+    router.push("/");
+    return;
   }
 
   try {
     // Fetch schools count
-    const schoolsSnapshot = await getDocs(collection(db, 'schools'))
-    totalSchools.value = schoolsSnapshot.size
+    const schoolsSnapshot = await getDocs(collection(db, "schools"));
+    totalSchools.value = schoolsSnapshot.size;
 
     // Fetch users count from users collection
-    const usersSnapshot = await getDocs(collection(db, 'users'))
-    totalUsers.value = usersSnapshot.size
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    totalUsers.value = usersSnapshot.size;
 
     // Fetch activity log
-    const q = query(
-      collection(db, 'activityLog'),
-      orderBy('timestamp', 'desc'),
-      limit(100)
-    )
-    const querySnapshot = await getDocs(q)
-    activities.value = querySnapshot.docs.map(doc => ({
+    const q = query(collection(db, "activityLog"), orderBy("timestamp", "desc"), limit(100));
+    const querySnapshot = await getDocs(q);
+    activities.value = querySnapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
-    }))
+      ...doc.data(),
+    }));
   } catch (error) {
-    console.error('Error fetching data:', error)
+    console.error("Error fetching data:", error);
   }
-  loading.value = false
+  loading.value = false;
 }
 
 // Wait for auth to load before checking admin status
-watch(authLoading, (newValue) => {
-  if (!newValue && !dataLoaded.value) {
-    loadData()
-  }
-}, { immediate: true })
+watch(
+  authLoading,
+  (newValue) => {
+    if (!newValue && !dataLoaded.value) {
+      loadData();
+    }
+  },
+  { immediate: true },
+);
 
 function formatDate(timestamp) {
-  if (!timestamp) return '—'
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  return date.toLocaleString()
+  if (!timestamp) return "—";
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleString();
 }
 
 function getActivityLabel(type) {
   switch (type) {
-    case 'signup': return 'User Signup'
-    case 'school_create': return 'School Created'
-    case 'school_edit': return 'School Edited'
-    case 'school_delete': return 'School Deleted'
-    default: return type
+    case "signup":
+      return "User Signup";
+    case "school_create":
+      return "School Created";
+    case "school_edit":
+      return "School Edited";
+    case "school_delete":
+      return "School Deleted";
+    default:
+      return type;
   }
 }
 
 function getActivityClass(type) {
   switch (type) {
-    case 'signup': return 'activity-signup'
-    case 'school_create': return 'activity-create'
-    case 'school_edit': return 'activity-edit'
-    case 'school_delete': return 'activity-delete'
-    default: return ''
+    case "signup":
+      return "activity-signup";
+    case "school_create":
+      return "activity-create";
+    case "school_edit":
+      return "activity-edit";
+    case "school_delete":
+      return "activity-delete";
+    default:
+      return "";
   }
 }
 </script>
@@ -103,9 +113,7 @@ function getActivityClass(type) {
 
     <div v-if="loading" class="loading">Loading activity log...</div>
 
-    <div v-else-if="activities.length === 0" class="empty">
-      No activity recorded yet.
-    </div>
+    <div v-else-if="activities.length === 0" class="empty">No activity recorded yet.</div>
 
     <div v-else class="activity-list">
       <h2>Activity Log</h2>
