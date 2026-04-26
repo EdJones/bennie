@@ -270,7 +270,7 @@ function normalize(str) {
     .replace(/\s*&\s*/g, " and ")
     .replace(/,?\s*(20\d{2})\b/g, "")
     .replace(
-      /^(hmh|houghton mifflin harcourt'?s?|mcgraw.?hill'?s?|amplify|savvas|pearson|imagine learning|openup resources|learnzillion|our|lucy calkins:?)\s+/i,
+      /^(hmh|houghton mifflin harcourt'?s?|houghton mifflin'?s?|mcgraw.?hill'?s?|amplify|savvas|pearson|imagine learning|openup resources|learnzillion|our|lucy calkins:?)\s+/i,
       "",
     )
     .replace(
