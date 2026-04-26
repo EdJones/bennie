@@ -29,7 +29,14 @@ export const curriculumCategories = [
       { name: "Into Reading", products: ["Into Reading", "HMH Into Reading 2020"] },
       {
         name: "Journeys",
-        products: ["Journeys", "HMH Journeys", "Journeys Common Core", "Journeys Reading"],
+        products: [
+          "Journeys",
+          "Journey's",
+          "HMH Journeys",
+          "HMH Journey's",
+          "Journeys Common Core",
+          "Journeys Reading",
+        ],
       },
       { name: "Wonders", products: ["Wonders", "Wonders 2020", "Wonders 2023", "Reading Wonders"] },
       { name: "Benchmark Workshop", products: ["Benchmark Workshop"] },
@@ -259,6 +266,7 @@ export const homegrownCategory = {
 function normalize(str) {
   return str
     .toLowerCase()
+    .replace(/'/g, "")
     .replace(/\s*&\s*/g, " and ")
     .replace(/,?\s*(20\d{2})\b/g, "")
     .replace(
