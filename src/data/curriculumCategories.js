@@ -27,6 +27,10 @@ export const curriculumCategories = [
     textColor: "#7a5a00",
     programs: [
       { name: "Into Reading", products: ["Into Reading", "HMH Into Reading 2020"] },
+      {
+        name: "Journeys",
+        products: ["Journeys", "HMH Journeys", "Journeys Common Core", "Journeys Reading"],
+      },
       { name: "Wonders", products: ["Wonders", "Wonders 2020", "Wonders 2023", "Reading Wonders"] },
       { name: "Benchmark Workshop", products: ["Benchmark Workshop"] },
       {
