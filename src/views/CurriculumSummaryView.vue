@@ -252,7 +252,7 @@ const hasHomegrownDetail = computed(
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(row, i) in tableData.rows" :key="i">
+        <tr v-for="(row, i) in tableData.rows" :key="i" :style="{ background: row.categoryColor }">
           <td
             v-if="row.isFirstInCategory"
             :rowspan="row.categoryRowspan"
