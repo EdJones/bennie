@@ -339,6 +339,9 @@ const visibleRows = computed(() => {
               class="category-cell"
             >
               {{ row.categoryName }}
+              <p v-if="row.categoryName === 'Foundational / Phonics'" class="category-note">
+                Not all state surveys requested foundational program names.
+              </p>
             </td>
             <td class="program-cell" :class="{ muted: row.programNameMuted }">
               {{ row.programName }}
@@ -527,6 +530,15 @@ td {
 
 tr:last-child td {
   border-bottom: none;
+}
+
+.category-note {
+  margin: 0.4rem 0 0;
+  font-size: 0.7rem;
+  font-weight: 400;
+  font-style: italic;
+  opacity: 0.75;
+  line-height: 1.3;
 }
 
 .category-cell {
