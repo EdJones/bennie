@@ -7,7 +7,14 @@ export const curriculumCategories = [
       { name: "Units of Study", products: ["Units of Study"] },
       {
         name: "Fountas & Pinnell Classroom",
-        products: ["Leveled Literacy Intervention (LLI)", "Phonics, Spelling, and Word Study"],
+        products: [
+          "Leveled Literacy Intervention (LLI)",
+          "Phonics, Spelling, and Word Study",
+          "Fountas & Pinnell Classroom",
+          "Fountas & Pinnell",
+          "F & P",
+          "F & P Classroom",
+        ],
       },
     ],
   },
