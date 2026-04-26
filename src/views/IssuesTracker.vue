@@ -1,128 +1,128 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { db } from '../firebase'
-import { useAuth } from '../composables/useAuth'
-import { createIssue, getIssues, updateIssueStatus } from '../services/issues'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { db } from "../firebase";
+import { useAuth } from "../composables/useAuth";
+import { createIssue, getIssues, updateIssueStatus } from "../services/issues";
 
-const router = useRouter()
-const { user, isAdmin } = useAuth()
+const router = useRouter();
+const { user, isAdmin } = useAuth();
 
-const issues = ref([])
-const loading = ref(true)
-const showCreateForm = ref(false)
-const statusFilter = ref('all')
+const issues = ref([]);
+const loading = ref(true);
+const showCreateForm = ref(false);
+const statusFilter = ref("all");
 
 const newIssue = ref({
-  title: '',
-  description: '',
-  type: 'other',
-  priority: 'medium'
-})
+  title: "",
+  description: "",
+  type: "other",
+  priority: "medium",
+});
 
 const issueTypes = [
-  { value: 'bug', label: 'Bug' },
-  { value: 'feature', label: 'Feature Request' },
-  { value: 'data', label: 'Data Issue' },
-  { value: 'other', label: 'Other' }
-]
+  { value: "bug", label: "Bug" },
+  { value: "feature", label: "Feature Request" },
+  { value: "data", label: "Data Issue" },
+  { value: "other", label: "Other" },
+];
 
 const priorities = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'critical', label: 'Critical' }
-]
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "critical", label: "Critical" },
+];
 
 const statuses = [
-  { value: 'open', label: 'Open' },
-  { value: 'in-progress', label: 'In Progress' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'closed', label: 'Closed' }
-]
+  { value: "open", label: "Open" },
+  { value: "in-progress", label: "In Progress" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+];
 
 async function fetchIssues() {
-  loading.value = true
+  loading.value = true;
   try {
-    issues.value = await getIssues(statusFilter.value === 'all' ? null : statusFilter.value)
+    issues.value = await getIssues(statusFilter.value === "all" ? null : statusFilter.value);
   } catch (error) {
-    console.error('Error fetching issues:', error)
-    alert('Error loading issues')
+    console.error("Error fetching issues:", error);
+    alert("Error loading issues");
   }
-  loading.value = false
+  loading.value = false;
 }
 
 async function handleCreateIssue() {
   if (!newIssue.value.title.trim() || !newIssue.value.description.trim()) {
-    alert('Please fill in all required fields')
-    return
+    alert("Please fill in all required fields");
+    return;
   }
 
   try {
-    await createIssue(user.value, newIssue.value)
-    newIssue.value = { title: '', description: '', type: 'other', priority: 'medium' }
-    showCreateForm.value = false
-    await fetchIssues()
+    await createIssue(user.value, newIssue.value);
+    newIssue.value = { title: "", description: "", type: "other", priority: "medium" };
+    showCreateForm.value = false;
+    await fetchIssues();
   } catch (error) {
-    console.error('Error creating issue:', error)
-    alert('Error creating issue')
+    console.error("Error creating issue:", error);
+    alert("Error creating issue");
   }
 }
 
 async function handleStatusChange(issueId, newStatus) {
   try {
-    await updateIssueStatus(issueId, newStatus, user.value)
-    await fetchIssues()
+    await updateIssueStatus(issueId, newStatus, user.value);
+    await fetchIssues();
   } catch (error) {
-    console.error('Error updating issue status:', error)
-    alert('Error updating issue status')
+    console.error("Error updating issue status:", error);
+    alert("Error updating issue status");
   }
 }
 
 function formatDate(timestamp) {
-  if (!timestamp) return '—'
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  return date.toLocaleString()
+  if (!timestamp) return "—";
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleString();
 }
 
 function getStatusClass(status) {
   const classes = {
-    'open': 'status-open',
-    'in-progress': 'status-in-progress',
-    'resolved': 'status-resolved',
-    'closed': 'status-closed'
-  }
-  return classes[status] || ''
+    open: "status-open",
+    "in-progress": "status-in-progress",
+    resolved: "status-resolved",
+    closed: "status-closed",
+  };
+  return classes[status] || "";
 }
 
 function getStatusLabel(status) {
-  const statusObj = statuses.find(s => s.value === status)
-  return statusObj ? statusObj.label : status
+  const statusObj = statuses.find((s) => s.value === status);
+  return statusObj ? statusObj.label : status;
 }
 
 function getTypeLabel(type) {
-  const typeObj = issueTypes.find(t => t.value === type)
-  return typeObj ? typeObj.label : type
+  const typeObj = issueTypes.find((t) => t.value === type);
+  return typeObj ? typeObj.label : type;
 }
 
 function getPriorityClass(priority) {
   const classes = {
-    'low': 'priority-low',
-    'medium': 'priority-medium',
-    'high': 'priority-high',
-    'critical': 'priority-critical'
-  }
-  return classes[priority] || ''
+    low: "priority-low",
+    medium: "priority-medium",
+    high: "priority-high",
+    critical: "priority-critical",
+  };
+  return classes[priority] || "";
 }
 
 function getPriorityLabel(priority) {
-  const priorityObj = priorities.find(p => p.value === priority)
-  return priorityObj ? priorityObj.label : priority
+  const priorityObj = priorities.find((p) => p.value === priority);
+  return priorityObj ? priorityObj.label : priority;
 }
 
 onMounted(() => {
-  fetchIssues()
-})
+  fetchIssues();
+});
 </script>
 
 <template>
@@ -142,12 +142,24 @@ onMounted(() => {
       <form @submit.prevent="handleCreateIssue">
         <div class="form-group">
           <label for="title">Title *</label>
-          <input id="title" v-model="newIssue.title" type="text" required placeholder="Brief description of the issue" />
+          <input
+            id="title"
+            v-model="newIssue.title"
+            type="text"
+            required
+            placeholder="Brief description of the issue"
+          />
         </div>
 
         <div class="form-group">
           <label for="description">Description *</label>
-          <textarea id="description" v-model="newIssue.description" rows="5" required placeholder="Detailed description of the issue"></textarea>
+          <textarea
+            id="description"
+            v-model="newIssue.description"
+            rows="5"
+            required
+            placeholder="Detailed description of the issue"
+          ></textarea>
         </div>
 
         <div class="form-row">
@@ -171,7 +183,9 @@ onMounted(() => {
         </div>
 
         <div class="form-actions">
-          <button type="button" class="btn-secondary" @click="showCreateForm = false">Cancel</button>
+          <button type="button" class="btn-secondary" @click="showCreateForm = false">
+            Cancel
+          </button>
           <button type="submit" class="btn-primary">Create Issue</button>
         </div>
       </form>
@@ -190,7 +204,9 @@ onMounted(() => {
     <div v-if="loading" class="loading">Loading issues...</div>
 
     <div v-else-if="issues.length === 0" class="empty">
-      No issues found{{ statusFilter !== 'all' ? ` with status "${getStatusLabel(statusFilter)}"` : '' }}.
+      No issues found{{
+        statusFilter !== "all" ? ` with status "${getStatusLabel(statusFilter)}"` : ""
+      }}.
     </div>
 
     <div v-else class="issues-list">
@@ -228,8 +244,8 @@ onMounted(() => {
             <td class="email">{{ issue.createdByEmail }}</td>
             <td class="timestamp">{{ formatDate(issue.createdAt) }}</td>
             <td v-if="isAdmin" class="actions">
-              <select 
-                :value="issue.status" 
+              <select
+                :value="issue.status"
                 @change="handleStatusChange(issue.id, $event.target.value)"
                 class="status-select"
               >
