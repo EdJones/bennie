@@ -4,7 +4,10 @@ export const curriculumCategories = [
     color: "#fce4e4",
     textColor: "#8b2020",
     programs: [
-      { name: "Units of Study", products: ["Units of Study"] },
+      {
+        name: "Units of Study",
+        products: ["Units of Study", "Revised Units of Study", "Lucy Calkins Units of Study"],
+      },
       {
         name: "Fountas & Pinnell Classroom",
         products: [
@@ -24,11 +27,17 @@ export const curriculumCategories = [
     textColor: "#7a5a00",
     programs: [
       { name: "Into Reading", products: ["Into Reading", "HMH Into Reading 2020"] },
-      { name: "Wonders", products: ["Wonders", "Wonders 2020", "Wonders 2023"] },
+      { name: "Wonders", products: ["Wonders", "Wonders 2020", "Wonders 2023", "Reading Wonders"] },
       { name: "Benchmark Workshop", products: ["Benchmark Workshop"] },
-      { name: "Benchmark Advance", products: ["Benchmark Advance", "ReadyGEN"] },
-      { name: "myView Literacy", products: ["myView Literacy"] },
-      { name: "Open Court Reading", products: ["Open Court Reading"] },
+      {
+        name: "Benchmark Advance",
+        products: ["Benchmark Advance", "Benchmark Advanced", "ReadyGEN"],
+      },
+      { name: "myView Literacy", products: ["myView Literacy", "myView"] },
+      {
+        name: "Open Court Reading",
+        products: ["Open Court Reading", "Open Court", "SRA Open Court"],
+      },
     ],
   },
   {
@@ -42,7 +51,10 @@ export const curriculumCategories = [
           "EL Education K-8 Language Arts 2nd Ed.",
           "EL Education K-5 Language Arts 2nd Ed.",
           "EL Education K-5 Language Arts",
+          "EL Education",
           "Skills Block",
+          "Expeditionary Learning",
+          "Expeditionary Learning English Language Arts",
         ],
       },
       { name: "Wit & Wisdom", products: ["Wit & Wisdom", "Geodes"] },
@@ -56,8 +68,14 @@ export const curriculumCategories = [
           "Amplify CKLA Skills, 2020",
         ],
       },
-      { name: "ELA Guidebooks", products: ["ELA Guidebooks"] },
-      { name: "Bookworms", products: ["Bookworms K-5"] },
+      {
+        name: "ELA Guidebooks",
+        products: ["ELA Guidebooks", "LearnZillion Guidebooks", "Guidebooks 2.0"],
+      },
+      {
+        name: "Bookworms",
+        products: ["Bookworms K-5", "Bookworms", "OUR Bookworms K-5 Reading & Writing"],
+      },
     ],
   },
   {
@@ -65,11 +83,14 @@ export const curriculumCategories = [
     color: "#ede8f5",
     textColor: "#3a1a6a",
     programs: [
-      { name: "Fundations", products: ["Fundations"] },
-      { name: "Wilson Reading System", products: ["Wilson Reading System", "Just Words"] },
+      { name: "Fundations", products: ["Fundations", "Wilson Fundations"] },
+      {
+        name: "Wilson Reading System",
+        products: ["Wilson Reading System", "Wilson Reading", "Just Words"],
+      },
       {
         name: "SIPPS",
-        products: ["SIPPS Beginning", "SIPPS Extension", "SIPPS Plus", "SIPPS Challenge"],
+        products: ["SIPPS", "SIPPS Beginning", "SIPPS Extension", "SIPPS Plus", "SIPPS Challenge"],
       },
       {
         name: "UFLI Foundations",
@@ -85,6 +106,8 @@ export const curriculumCategories = [
           "Phonemic Awareness Curriculum",
           "Bridge to Reading",
           "Heggerty Phonemic Awareness Curriculum",
+          "Heggerty Phonemic Awareness",
+          "Heggerty",
         ],
       },
       {
@@ -105,10 +128,15 @@ export const curriculumCategories = [
         name: "Really Great Reading",
         products: ["Phonics Blitz", "Phonics Boost", "HD Word", "Countdown"],
       },
-      { name: "Saxon Phonics", products: ["Saxon Phonics"] },
+      { name: "Saxon Phonics", products: ["Saxon Phonics", "Saxon Phonics & Spelling"] },
       {
         name: "Reading Mastery",
-        products: ["Reading Mastery", "SRA Early Interventions", "Corrective Reading"],
+        products: [
+          "Reading Mastery",
+          "Reading Mastery Signature Edition",
+          "SRA Early Interventions",
+          "Corrective Reading",
+        ],
       },
       {
         name: "Orton-Gillingham",
@@ -168,7 +196,13 @@ export const curriculumCategories = [
       },
       {
         name: "i-Ready",
-        products: ["i-Ready Instruction", "Phonics for Reading", "Ready Reading"],
+        products: [
+          "i-Ready Instruction",
+          "i-Ready",
+          "iReady",
+          "Phonics for Reading",
+          "Ready Reading",
+        ],
       },
       { name: "Words Their Way", products: ["Words Their Way"] },
       { name: "Fast ForWord", products: ["Fast ForWord"] },
@@ -189,7 +223,11 @@ function normalize(str) {
     .replace(/\s*&\s*/g, " and ")
     .replace(/,?\s*(20\d{2})\b/g, "")
     .replace(
-      /^(hmh|houghton mifflin harcourt'?s?|mcgraw.?hill'?s?|amplify|savvas|pearson|imagine learning|openup resources|learnzillion|our)\s+/i,
+      /^(hmh|houghton mifflin harcourt'?s?|mcgraw.?hill'?s?|amplify|savvas|pearson|imagine learning|openup resources|learnzillion|our|lucy calkins:?)\s+/i,
+      "",
+    )
+    .replace(
+      /\s*[[(]?(second|2nd|3rd|revised|updated|common core|signature)\s*(edition|ed\.?)[\])]?\s*$/i,
       "",
     )
     .replace(/[,.:!?]+$/, "")
