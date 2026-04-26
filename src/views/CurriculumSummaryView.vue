@@ -99,16 +99,32 @@ const tableData = computed(() => {
   const schoolList = filteredSchools.value;
   const total = schoolList.length;
 
-  const programCounts = {};
+  const programSchools = {};
+  const homegrownSchools = new Set();
+  const noDataSchools = new Set();
+
   for (const school of schoolList) {
-    const product = school.elaCurricula?.[0]?.product;
-    const match = product ? getProgramForProduct(product) : null;
-    const key = match
-      ? `${match.categoryName}||${match.programName}`
-      : product
-        ? "__homegrown__"
-        : "__no_data__";
-    programCounts[key] = (programCounts[key] ?? 0) + 1;
+    const curricula = school.elaCurricula ?? [];
+    const products = curricula.map((e) => e?.product?.trim()).filter(Boolean);
+
+    if (products.length === 0) {
+      noDataSchools.add(school.id);
+      continue;
+    }
+
+    let hasUnmatched = false;
+    for (const product of products) {
+      const match = getProgramForProduct(product);
+      if (match) {
+        const key = `${match.categoryName}||${match.programName}`;
+        if (!programSchools[key]) programSchools[key] = new Set();
+        programSchools[key].add(school.id);
+      } else {
+        hasUnmatched = true;
+      }
+    }
+
+    if (hasUnmatched) homegrownSchools.add(school.id);
   }
 
   const rows = [];
@@ -119,7 +135,7 @@ const tableData = computed(() => {
 
     for (const prog of cat.programs) {
       const key = `${cat.name}||${prog.name}`;
-      const count = programCounts[key] ?? 0;
+      const count = programSchools[key]?.size ?? 0;
       catTotal += count;
       catRows.push({ programName: prog.name, count });
     }
@@ -139,8 +155,8 @@ const tableData = computed(() => {
     });
   }
 
-  const homegrownCount = programCounts["__homegrown__"] ?? 0;
-  const noDataCount = programCounts["__no_data__"] ?? 0;
+  const homegrownCount = homegrownSchools.size;
+  const noDataCount = noDataSchools.size;
   const homegrownTotal = homegrownCount + noDataCount;
   rows.push({
     isFirstInCategory: true,
@@ -172,9 +188,11 @@ const tableData = computed(() => {
 const unmatchedProducts = computed(() => {
   const counts = {};
   for (const school of filteredSchools.value) {
-    const product = school.elaCurricula?.[0]?.product;
-    if (product && !getProgramForProduct(product)) {
-      counts[product] = (counts[product] ?? 0) + 1;
+    for (const entry of school.elaCurricula ?? []) {
+      const product = entry?.product?.trim();
+      if (product && !getProgramForProduct(product)) {
+        counts[product] = (counts[product] ?? 0) + 1;
+      }
     }
   }
   return Object.entries(counts).sort((a, b) => b[1] - a[1]);
@@ -183,9 +201,10 @@ const unmatchedProducts = computed(() => {
 const noDataByProvider = computed(() => {
   const counts = {};
   for (const school of filteredSchools.value) {
-    const entry = school.elaCurricula?.[0];
-    if (!entry?.product) {
-      const key = entry?.provider || "(no provider)";
+    const curricula = school.elaCurricula ?? [];
+    const hasAnyProduct = curricula.some((e) => e?.product?.trim());
+    if (!hasAnyProduct) {
+      const key = curricula[0]?.provider || "(no provider)";
       counts[key] = (counts[key] ?? 0) + 1;
     }
   }
