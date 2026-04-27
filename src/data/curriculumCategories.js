@@ -19,6 +19,7 @@ export const curriculumCategories = [
           "F & P Classroom",
         ],
       },
+      { name: "Benchmark Literacy", products: ["Benchmark Literacy"] },
     ],
   },
   {
@@ -49,6 +50,7 @@ export const curriculumCategories = [
         products: ["Benchmark Advance", "Benchmark Advanced", "ReadyGEN"],
       },
       { name: "myView Literacy", products: ["myView Literacy", "myView"] },
+      { name: "Houghton Mifflin Reading", products: ["Houghton Mifflin Reading", "HMH Reading"] },
       {
         name: "Open Court Reading",
         products: ["Open Court Reading", "Open Court", "SRA Open Court"],
@@ -77,10 +79,17 @@ export const curriculumCategories = [
         name: "Core Knowledge (CKLA)",
         products: [
           "Core Knowledge Language Arts (CKLA)",
+          "Core Knowledge Language Arts",
+          "Core Knowledge Sequence",
+          "Core Knowledge",
+          "CKLA",
           "CKLA Skills",
           "CKLA Knowledge",
+          "CKLA from Amplify",
+          "Amplify CKLA",
           "Amplify CKLA K-5 Core Comprehensive",
           "Amplify CKLA Skills, 2020",
+          "Amplify CKLA Second Edition",
         ],
       },
       {
@@ -114,6 +123,7 @@ export const curriculumCategories = [
         name: "Fishtank ELA",
         products: [
           "Fishtank ELA",
+          "Fishtank",
           "Fishtank Plus ELA",
           "Fishtank Plus Curriculum",
           "Fishtank ELA K-2",
