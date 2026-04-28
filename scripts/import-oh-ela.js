@@ -93,14 +93,10 @@ function parseCSV(filePath) {
   const orgs = new Map(); // irn -> { name, orgType, curricula: Set entries }
 
   for (const row of rows) {
-    const [irn, name, , orgType, rawProduct, , , , dewMaterialType, dewGrades] = row;
+    const [irn, name, , orgType, rawProduct, , , reportedMaterialType, , dewGrades] = row;
 
     if (!INCLUDED_ORG_TYPES.has(orgType)) continue;
-    if (
-      dewMaterialType !== "ELA Core" &&
-      dewMaterialType !== "Both ELA Core and Reading Intervention"
-    )
-      continue;
+    if (!reportedMaterialType) continue;
 
     const start = parseGrade(dewGrades.trim().split(/\s*-\s*/)[0]);
     if (start < 0 || start > 6) continue; // skip PreK-only and 7+ rows
@@ -108,14 +104,14 @@ function parseCSV(filePath) {
     if (!orgs.has(irn)) orgs.set(irn, { name, orgType, entries: [] });
     const { product, provider } = parseProduct(rawProduct);
     const gradeRange = formatGradeRange(dewGrades);
-    orgs.get(irn).entries.push({ gradeRange, provider, product, year: null });
+    orgs.get(irn).entries.push({ gradeRange, provider, product, year: null, reportedMaterialType });
   }
 
   // Dedup entries within each org (same product + gradeRange)
   for (const org of orgs.values()) {
     const seen = new Set();
     org.entries = org.entries.filter((e) => {
-      const key = `${e.product}|${e.gradeRange}`;
+      const key = `${e.product}|${e.gradeRange}|${e.reportedMaterialType}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
