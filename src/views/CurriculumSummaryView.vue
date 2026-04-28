@@ -120,7 +120,10 @@ const tableData = computed(() => {
     }
 
     let hasUnmatched = false;
-    for (const product of products) {
+    for (const entry of curricula) {
+      const product = entry?.product?.trim();
+      if (!product) continue;
+      if (entry?.reportedMaterialType === "Reading Intervention") continue;
       const match = getProgramForProduct(product);
       if (match) {
         const key = `${match.categoryName}||${match.programName}`;
