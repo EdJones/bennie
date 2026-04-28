@@ -1,9 +1,10 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { db } from "../firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { fetchCemdDistrict } from "../services/cemd";
+import { getProgramForProduct } from "../data/curriculumCategories";
 
 const route = useRoute();
 const router = useRouter();
@@ -25,6 +26,44 @@ onMounted(async () => {
     console.error("Error fetching school:", error);
   }
   loading.value = false;
+});
+
+const INTERVENTION_MATERIAL_TYPES = new Set([
+  "Reading Intervention",
+  "Both ELA Core and Reading Intervention",
+]);
+
+const coreCurricula = computed(() =>
+  (school.value?.elaCurricula ?? []).filter((e) => {
+    if (INTERVENTION_MATERIAL_TYPES.has(e?.reportedMaterialType)) return false;
+    return (
+      getProgramForProduct(e?.product?.trim() ?? "")?.categoryName !== "Foundational / Phonics"
+    );
+  }),
+);
+
+const foundationalCurricula = computed(() =>
+  (school.value?.elaCurricula ?? []).filter(
+    (e) =>
+      !INTERVENTION_MATERIAL_TYPES.has(e?.reportedMaterialType) &&
+      getProgramForProduct(e?.product?.trim() ?? "")?.categoryName === "Foundational / Phonics",
+  ),
+);
+
+const interventionCurricula = computed(() =>
+  (school.value?.elaCurricula ?? []).filter((e) =>
+    INTERVENTION_MATERIAL_TYPES.has(e?.reportedMaterialType),
+  ),
+);
+
+const legacyInterventionProducts = computed(() => school.value?.interventionProducts ?? []);
+
+const hasMultipleCurriculumSections = computed(() => {
+  let count = 0;
+  if (coreCurricula.value.length) count++;
+  if (foundationalCurricula.value.length) count++;
+  if (interventionCurricula.value.length || legacyInterventionProducts.value.length) count++;
+  return count >= 2;
 });
 
 function formatBoolean(value) {
@@ -54,21 +93,88 @@ function formatBoolean(value) {
 
       <div class="info-card primary">
         <h2>ELA Curriculum</h2>
-        <div v-if="!school.elaCurricula?.length" class="empty-state">
+        <div
+          v-if="
+            !coreCurricula.length &&
+            !foundationalCurricula.length &&
+            !interventionCurricula.length &&
+            !legacyInterventionProducts.length
+          "
+          class="empty-state"
+        >
           No curriculum data on record.
         </div>
-        <div v-else class="curriculum-entries">
-          <div v-for="(entry, index) in school.elaCurricula" :key="index" class="curriculum-entry">
-            <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
-            <div v-if="entry.product && entry.provider" class="curriculum-byline">
-              {{ entry.provider }}
+        <template v-else>
+          <template v-if="coreCurricula.length">
+            <h3 v-if="hasMultipleCurriculumSections" class="curriculum-section-heading">
+              Core Curriculum
+            </h3>
+            <div class="curriculum-entries">
+              <div v-for="(entry, i) in coreCurricula" :key="'core-' + i" class="curriculum-entry">
+                <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
+                <div v-if="entry.product && entry.provider" class="curriculum-byline">
+                  {{ entry.provider }}
+                </div>
+                <div class="chip-group">
+                  <span v-if="entry.gradeRange" class="chip chip-meta">{{ entry.gradeRange }}</span>
+                  <span v-if="entry.year" class="chip chip-meta">{{ entry.year }}</span>
+                </div>
+              </div>
             </div>
-            <div class="chip-group">
-              <span v-if="entry.gradeRange" class="chip chip-meta">{{ entry.gradeRange }}</span>
-              <span v-if="entry.year" class="chip chip-meta">{{ entry.year }}</span>
+          </template>
+
+          <template v-if="foundationalCurricula.length">
+            <h3 class="curriculum-section-heading">Foundational / Phonics</h3>
+            <div class="curriculum-entries">
+              <div
+                v-for="(entry, i) in foundationalCurricula"
+                :key="'found-' + i"
+                class="curriculum-entry"
+              >
+                <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
+                <div v-if="entry.product && entry.provider" class="curriculum-byline">
+                  {{ entry.provider }}
+                </div>
+                <div class="chip-group">
+                  <span v-if="entry.gradeRange" class="chip chip-meta">{{ entry.gradeRange }}</span>
+                  <span v-if="entry.year" class="chip chip-meta">{{ entry.year }}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </template>
+
+          <template v-if="interventionCurricula.length || legacyInterventionProducts.length">
+            <h3 class="curriculum-section-heading">Intervention</h3>
+            <div class="curriculum-entries">
+              <div
+                v-for="(entry, i) in interventionCurricula"
+                :key="'int-' + i"
+                class="curriculum-entry"
+              >
+                <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
+                <div v-if="entry.product && entry.provider" class="curriculum-byline">
+                  {{ entry.provider }}
+                </div>
+                <div class="chip-group">
+                  <span v-if="entry.gradeRange" class="chip chip-meta">{{ entry.gradeRange }}</span>
+                  <span v-if="entry.year" class="chip chip-meta">{{ entry.year }}</span>
+                  <span
+                    v-if="entry.reportedMaterialType === 'Both ELA Core and Reading Intervention'"
+                    class="chip chip-meta"
+                    >Also Core</span
+                  >
+                </div>
+              </div>
+              <div
+                v-for="p in legacyInterventionProducts"
+                :key="'legacy-' + p"
+                class="curriculum-entry"
+              >
+                <div class="curriculum-name">{{ p }}</div>
+              </div>
+            </div>
+          </template>
+        </template>
       </div>
 
       <div class="info-card primary">
@@ -392,6 +498,21 @@ function formatBoolean(value) {
 }
 
 .info-card h3:first-of-type {
+  margin-top: 0;
+}
+
+.curriculum-section-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999;
+  margin: 1.25rem 0 0.6rem 0;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.curriculum-section-heading:first-of-type {
   margin-top: 0;
 }
 

@@ -75,6 +75,20 @@ const selectedCurriculum = ref("");
 const selectedIntervention = ref("");
 const interventionProducts = getInterventionProductNames();
 
+const INTERVENTION_MATERIAL_TYPES = new Set([
+  "Reading Intervention",
+  "Both ELA Core and Reading Intervention",
+]);
+
+function getSchoolInterventionProducts(school) {
+  const fromField = school.interventionProducts ?? [];
+  const fromCurricula = (school.elaCurricula ?? [])
+    .filter((e) => INTERVENTION_MATERIAL_TYPES.has(e?.reportedMaterialType))
+    .map((e) => e?.product?.trim())
+    .filter(Boolean);
+  return [...new Set([...fromField, ...fromCurricula])];
+}
+
 function getCurriculumLabel(school) {
   const first = school.elaCurricula?.[0];
   return first?.product ?? first?.provider ?? "";
@@ -139,7 +153,7 @@ const filteredSchools = computed(() => {
       if (!s.elaCurricula?.some((c) => c.product === selectedCurriculum.value)) return false;
     }
     if (selectedIntervention.value) {
-      if (!s.interventionProducts?.includes(selectedIntervention.value)) return false;
+      if (!getSchoolInterventionProducts(s).includes(selectedIntervention.value)) return false;
     }
     if (q)
       return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
@@ -371,7 +385,7 @@ onUnmounted(() => {
               <td class="curriculum-cell">{{ getCurriculumLabel(school) }}</td>
               <td v-if="selectedIntervention" class="interventions-cell">
                 <span
-                  v-for="p in school.interventionProducts"
+                  v-for="p in getSchoolInterventionProducts(school)"
                   :key="p"
                   class="intervention-tag"
                   :class="{ highlight: p === selectedIntervention }"
