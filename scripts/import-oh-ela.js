@@ -66,6 +66,7 @@ function formatGradeRange(dewGrades) {
   const parts = dewGrades.trim().split(/\s*-\s*/);
   const start = parseGrade(parts[0]);
   const rawEnd = parseGrade(parts[1] ?? parts[0]);
+  if (isNaN(start) || isNaN(rawEnd)) return null;
   const end = Math.min(rawEnd, 6);
   if (start === end) return gradeDisplay(start);
   return `${gradeDisplay(start)}-${gradeDisplay(end)}`;
@@ -141,7 +142,7 @@ async function importData() {
       console.log(`${name} (${irn}):`);
       for (const e of entries) {
         console.log(
-          `  ${String(e.gradeRange).padEnd(6)} ${e.product}${e.provider ? ` (${e.provider})` : ""}`,
+          `  ${String(e.gradeRange).padEnd(6)} ${e.product}${e.provider ? ` (${e.provider})` : ""} [${e.reportedMaterialType}]`,
         );
       }
     }
