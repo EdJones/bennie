@@ -280,6 +280,12 @@ export const curriculumCategories = [
   },
 ];
 
+export const interventionCategory = {
+  name: "Intervention",
+  color: "#e4f0f8",
+  textColor: "#1a3d5c",
+};
+
 export const homegrownCategory = {
   name: "Homegrown",
   color: "#fdecea",

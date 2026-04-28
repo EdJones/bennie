@@ -4,6 +4,7 @@ import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
 import {
   curriculumCategories,
+  interventionCategory,
   homegrownCategory,
   getProgramForProduct,
 } from "../data/curriculumCategories";
@@ -95,11 +96,17 @@ function pct(count, total) {
   return ((count / total) * 100).toFixed(1) + "%";
 }
 
+const INTERVENTION_TYPES = new Set([
+  "Reading Intervention",
+  "Both ELA Core and Reading Intervention",
+]);
+
 const tableData = computed(() => {
   const schoolList = filteredSchools.value;
   const total = schoolList.length;
 
   const programSchools = {};
+  const interventionProgramSchools = {};
   const homegrownSchools = new Set();
   const noDataSchools = new Set();
 
@@ -125,6 +132,16 @@ const tableData = computed(() => {
     }
 
     if (hasUnmatched) homegrownSchools.add(school.id);
+
+    for (const entry of curricula) {
+      if (!INTERVENTION_TYPES.has(entry?.reportedMaterialType)) continue;
+      const product = entry?.product?.trim();
+      if (!product) continue;
+      const match = getProgramForProduct(product);
+      const progName = match ? match.programName : product;
+      if (!interventionProgramSchools[progName]) interventionProgramSchools[progName] = new Set();
+      interventionProgramSchools[progName].add(school.id);
+    }
   }
 
   const rows = [];
@@ -155,6 +172,28 @@ const tableData = computed(() => {
       });
     });
   }
+
+  const interventionEntries = Object.entries(interventionProgramSchools)
+    .map(([name, s]) => ({ programName: name, count: s.size }))
+    .sort((a, b) => b.count - a.count);
+  const interventionTotal = new Set(
+    Object.values(interventionProgramSchools).flatMap((s) => [...s]),
+  ).size;
+
+  interventionEntries.forEach((prog, i) => {
+    rows.push({
+      isFirstInCategory: i === 0,
+      categoryRowspan: interventionEntries.length,
+      categoryName: interventionCategory.name,
+      categoryColor: interventionCategory.color,
+      categoryTextColor: interventionCategory.textColor,
+      catTotal: interventionTotal,
+      programName: prog.programName,
+      count: prog.count,
+      shareOfAdoptions: pct(prog.count, total),
+      categoryShare: pct(interventionTotal, total),
+    });
+  });
 
   const homegrownCount = homegrownSchools.size;
   const noDataCount = noDataSchools.size;
@@ -341,6 +380,9 @@ const visibleRows = computed(() => {
               {{ row.categoryName }}
               <p v-if="row.categoryName === 'Foundational / Phonics'" class="category-note">
                 Not all state surveys requested foundational program names.
+              </p>
+              <p v-else-if="row.categoryName === 'Intervention'" class="category-note">
+                Based on states that report intervention program usage.
               </p>
             </td>
             <td class="program-cell" :class="{ muted: row.programNameMuted }">
