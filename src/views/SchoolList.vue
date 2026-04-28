@@ -1,8 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { getInterventionProductNames } from "../data/interventionProducts";
-
 const STATE_NAMES = {
   AL: "Alabama",
   AK: "Alaska",
@@ -73,7 +71,7 @@ const dropdownRef = ref(null);
 const searchQuery = ref("");
 const selectedCurriculum = ref("");
 const selectedIntervention = ref("");
-const interventionProducts = getInterventionProductNames();
+const showInterventionPanel = ref(false);
 
 const INTERVENTION_MATERIAL_TYPES = new Set([
   "Reading Intervention",
@@ -93,6 +91,16 @@ function getCurriculumLabel(school) {
   const first = school.elaCurricula?.[0];
   return first?.product ?? first?.provider ?? "";
 }
+
+const usedInterventionProducts = computed(() => {
+  const products = new Set();
+  for (const school of schools.value) {
+    for (const p of getSchoolInterventionProducts(school)) {
+      products.add(p);
+    }
+  }
+  return [...products].sort();
+});
 
 const uniqueCurriculumProducts = computed(() => {
   const products = new Set();
@@ -321,21 +329,36 @@ onUnmounted(() => {
         </div>
 
         <div class="filters-row">
-          <span class="filters-or">Or, explore intervention products.</span>
+          <button
+            class="intervention-toggle"
+            :class="{ active: showInterventionPanel || selectedIntervention }"
+            @click="showInterventionPanel = !showInterventionPanel"
+          >
+            Explore Intervention Products
+            <span class="toggle-chevron">{{ showInterventionPanel ? "▴" : "▾" }}</span>
+          </button>
 
-          <div class="curriculum-filter">
-            <select v-model="selectedIntervention" class="curriculum-select">
-              <option value="">All intervention products</option>
-              <option v-for="p in interventionProducts" :key="p" :value="p">{{ p }}</option>
-            </select>
-            <button
-              v-if="selectedIntervention"
-              class="clear-curriculum"
-              @click="selectedIntervention = ''"
-            >
-              ×
-            </button>
-          </div>
+          <template v-if="showInterventionPanel || selectedIntervention">
+            <div v-if="loading" class="intervention-note">Loading…</div>
+            <div v-else-if="!usedInterventionProducts.length" class="intervention-note">
+              No intervention data recorded yet.
+            </div>
+            <template v-else>
+              <div class="curriculum-filter">
+                <select v-model="selectedIntervention" class="curriculum-select">
+                  <option value="">All intervention products</option>
+                  <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
+                </select>
+                <button
+                  v-if="selectedIntervention"
+                  class="clear-curriculum"
+                  @click="selectedIntervention = ''"
+                >
+                  ×
+                </button>
+              </div>
+            </template>
+          </template>
         </div>
 
         <div v-if="!selectedState && !selectedCurriculum && !selectedIntervention" class="empty">
@@ -786,6 +809,40 @@ th {
 
 .btn-delete:hover {
   background-color: #fdd;
+}
+
+.intervention-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #4a90a4;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.intervention-toggle:hover,
+.intervention-toggle.active {
+  border-color: #4a90a4;
+  background: #f0f7fa;
+}
+
+.toggle-chevron {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.intervention-note {
+  font-size: 0.85rem;
+  color: #999;
+  align-self: center;
 }
 
 .curriculum-filter {
