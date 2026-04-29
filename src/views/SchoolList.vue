@@ -220,6 +220,9 @@ const filteredSchools = computed(() => {
     return true;
   });
   return [...list].sort((a, b) => {
+    const aIsDistrict = a.level === "district" ? 0 : 1;
+    const bIsDistrict = b.level === "district" ? 0 : 1;
+    if (aIsDistrict !== bIsDistrict) return aIsDistrict - bIsDistrict;
     const stateA = a.state ?? "",
       stateB = b.state ?? "";
     if (stateA !== stateB) return stateA.localeCompare(stateB);
@@ -231,6 +234,13 @@ const filteredSchools = computed(() => {
     return nameA.localeCompare(nameB);
   });
 });
+
+const filteredDistricts = computed(() =>
+  filteredSchools.value.filter((s) => s.level === "district"),
+);
+const filteredNonDistricts = computed(() =>
+  filteredSchools.value.filter((s) => s.level !== "district"),
+);
 
 async function fetchSchools() {
   loading.value = true;
@@ -447,7 +457,7 @@ onUnmounted(() => {
           </thead>
           <tbody>
             <tr
-              v-for="school in filteredSchools"
+              v-for="school in filteredDistricts"
               :key="school.id"
               class="clickable-row"
               @click="router.push(`/view/${school.id}`)"
@@ -455,9 +465,45 @@ onUnmounted(() => {
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
               <td v-if="activeTab === 'core'">
-                {{ school.level === "district" ? school.districtName : school.schoolName }}
-                <span v-if="school.level === 'district'" class="level-badge">District</span>
+                {{ school.districtName }}
+                <span class="level-badge">District</span>
               </td>
+              <td v-if="activeTab === 'core'" class="curriculum-cell">
+                {{ getCoreCurricula(school).join(", ") }}
+              </td>
+              <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
+                {{ getFoundationalCurricula(school).join(", ") }}
+              </td>
+              <td v-if="activeTab === 'intervention'" class="interventions-cell">
+                <span
+                  v-for="p in getSchoolInterventionProducts(school)"
+                  :key="p"
+                  class="intervention-tag"
+                  :class="{ highlight: p === selectedIntervention }"
+                  >{{ p }}</span
+                >
+              </td>
+              <td v-if="isAdmin" class="actions">
+                <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
+              </td>
+            </tr>
+
+            <tr
+              v-if="filteredDistricts.length && filteredNonDistricts.length"
+              class="section-separator"
+            >
+              <td colspan="10">Individual Schools</td>
+            </tr>
+
+            <tr
+              v-for="school in filteredNonDistricts"
+              :key="school.id"
+              class="clickable-row"
+              @click="router.push(`/view/${school.id}`)"
+            >
+              <td>{{ school.state }}</td>
+              <td>{{ school.districtName }}</td>
+              <td v-if="activeTab === 'core'">{{ school.schoolName }}</td>
               <td v-if="activeTab === 'core'" class="curriculum-cell">
                 {{ getCoreCurricula(school).join(", ") }}
               </td>
@@ -953,6 +999,18 @@ th {
 
 .foundational-cell {
   color: #888;
+}
+
+.section-separator td {
+  background: #f8f9fa;
+  color: #999;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 1rem;
+  border-top: 2px solid #e8e8e8;
+  cursor: default;
 }
 
 .level-badge {
