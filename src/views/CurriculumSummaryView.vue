@@ -147,7 +147,7 @@ const tableData = computed(() => {
     }
   }
 
-  const rows = [];
+  const coreRows = [];
 
   for (const cat of curriculumCategories) {
     let catTotal = 0;
@@ -162,7 +162,7 @@ const tableData = computed(() => {
 
     catRows.sort((a, b) => b.count - a.count);
     catRows.forEach((row, i) => {
-      rows.push({
+      coreRows.push({
         ...row,
         isFirstInCategory: i === 0,
         categoryRowspan: cat.programs.length,
@@ -176,32 +176,10 @@ const tableData = computed(() => {
     });
   }
 
-  const interventionEntries = Object.entries(interventionProgramSchools)
-    .map(([name, s]) => ({ programName: name, count: s.size }))
-    .sort((a, b) => b.count - a.count);
-  const interventionTotal = new Set(
-    Object.values(interventionProgramSchools).flatMap((s) => [...s]),
-  ).size;
-
-  interventionEntries.forEach((prog, i) => {
-    rows.push({
-      isFirstInCategory: i === 0,
-      categoryRowspan: interventionEntries.length,
-      categoryName: interventionCategory.name,
-      categoryColor: interventionCategory.color,
-      categoryTextColor: interventionCategory.textColor,
-      catTotal: interventionTotal,
-      programName: prog.programName,
-      count: prog.count,
-      shareOfAdoptions: pct(prog.count, total),
-      categoryShare: pct(interventionTotal, total),
-    });
-  });
-
   const homegrownCount = homegrownSchools.size;
   const noDataCount = noDataSchools.size;
   const homegrownTotal = homegrownCount + noDataCount;
-  rows.push({
+  coreRows.push({
     isFirstInCategory: true,
     categoryRowspan: 2,
     categoryName: homegrownCategory.name,
@@ -213,7 +191,7 @@ const tableData = computed(() => {
     shareOfAdoptions: pct(homegrownCount, total),
     categoryShare: pct(homegrownTotal, total),
   });
-  rows.push({
+  coreRows.push({
     isFirstInCategory: false,
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
@@ -225,7 +203,27 @@ const tableData = computed(() => {
     categoryShare: pct(homegrownTotal, total),
   });
 
-  return { rows, total };
+  const interventionEntries = Object.entries(interventionProgramSchools)
+    .map(([name, s]) => ({ programName: name, count: s.size }))
+    .sort((a, b) => b.count - a.count);
+  const interventionTotal = new Set(
+    Object.values(interventionProgramSchools).flatMap((s) => [...s]),
+  ).size;
+
+  const interventionRows = interventionEntries.map((prog, i) => ({
+    isFirstInCategory: i === 0,
+    categoryRowspan: interventionEntries.length,
+    categoryName: interventionCategory.name,
+    categoryColor: interventionCategory.color,
+    categoryTextColor: interventionCategory.textColor,
+    catTotal: interventionTotal,
+    programName: prog.programName,
+    count: prog.count,
+    shareOfAdoptions: pct(prog.count, total),
+    categoryShare: pct(interventionTotal, total),
+  }));
+
+  return { coreRows, interventionRows, total };
 });
 
 const unmatchedProducts = computed(() => {
@@ -258,8 +256,15 @@ const hasHomegrownDetail = computed(
   () => unmatchedProducts.value.length > 0 || noDataByProvider.value.length > 0,
 );
 
+const activeTab = ref("core");
+
 const COLLAPSE_THRESHOLD = 10;
 const expandedCategories = ref(new Set());
+
+function switchTab(tab) {
+  activeTab.value = tab;
+  expandedCategories.value = new Set();
+}
 
 function toggleCategory(name) {
   const s = new Set(expandedCategories.value);
@@ -268,9 +273,13 @@ function toggleCategory(name) {
   expandedCategories.value = s;
 }
 
+const activeRows = computed(() =>
+  activeTab.value === "core" ? tableData.value.coreRows : tableData.value.interventionRows,
+);
+
 const visibleRows = computed(() => {
   const result = [];
-  const allRows = tableData.value.rows;
+  const allRows = activeRows.value;
   let i = 0;
 
   while (i < allRows.length) {
@@ -352,6 +361,19 @@ const visibleRows = computed(() => {
       </div>
     </div>
 
+    <div class="tab-bar">
+      <button class="tab-btn" :class="{ active: activeTab === 'core' }" @click="switchTab('core')">
+        Core / Foundational
+      </button>
+      <button
+        class="tab-btn"
+        :class="{ active: activeTab === 'intervention' }"
+        @click="switchTab('intervention')"
+      >
+        Intervention
+      </button>
+    </div>
+
     <div v-if="loading" class="loading">Loading...</div>
 
     <table v-else class="summary-table">
@@ -406,12 +428,12 @@ const visibleRows = computed(() => {
       </tbody>
     </table>
 
-    <p class="footnote">
+    <p v-if="activeTab === 'core'" class="footnote">
       Each record is assigned to a category based on its primary curriculum. Records without a
       recognized curriculum appear under Homegrown.
     </p>
 
-    <details v-if="!loading && hasHomegrownDetail" class="homegrown-detail">
+    <details v-if="!loading && activeTab === 'core' && hasHomegrownDetail" class="homegrown-detail">
       <summary>What's in the Homegrown category?</summary>
 
       <div class="detail-sections">
@@ -534,6 +556,37 @@ const visibleRows = computed(() => {
 
 .clear-btn:hover {
   background: #ccc;
+}
+
+.tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.tab-btn {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  margin-bottom: -2px;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: #444;
+}
+
+.tab-btn.active {
+  color: #4a90a4;
+  border-bottom-color: #4a90a4;
 }
 
 .loading {
