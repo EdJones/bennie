@@ -1,8 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { getInterventionProductNames } from "../data/interventionProducts";
-
 const STATE_NAMES = {
   AL: "Alabama",
   AK: "Alaska",
@@ -61,6 +59,45 @@ import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "../composables/useAuth";
 import { logSchoolDelete } from "../services/activityLog";
 import { getSchoolCountForDistricts } from "../services/nces";
+import { getProgramForProduct } from "../data/curriculumCategories";
+
+const CORE_CATEGORIES = new Set([
+  "Balanced Literacy",
+  "Basals",
+  "Book-Centered & Knowledge-Building",
+]);
+
+function getCoreCurricula(school) {
+  const seen = new Set();
+  const results = [];
+  for (const entry of school.elaCurricula ?? []) {
+    const product = entry?.product?.trim();
+    if (!product) continue;
+    if (INTERVENTION_MATERIAL_TYPES.has(entry?.reportedMaterialType)) continue;
+    const match = getProgramForProduct(product);
+    if (match && CORE_CATEGORIES.has(match.categoryName) && !seen.has(match.programName)) {
+      seen.add(match.programName);
+      results.push(match.programName);
+    }
+  }
+  return results;
+}
+
+function getFoundationalCurricula(school) {
+  const seen = new Set();
+  const results = [];
+  for (const entry of school.elaCurricula ?? []) {
+    const product = entry?.product?.trim();
+    if (!product) continue;
+    if (INTERVENTION_MATERIAL_TYPES.has(entry?.reportedMaterialType)) continue;
+    const match = getProgramForProduct(product);
+    if (match && match.categoryName === "Foundational / Phonics" && !seen.has(match.programName)) {
+      seen.add(match.programName);
+      results.push(match.programName);
+    }
+  }
+  return results;
+}
 
 const router = useRouter();
 const route = useRoute();
@@ -73,12 +110,39 @@ const dropdownRef = ref(null);
 const searchQuery = ref("");
 const selectedCurriculum = ref("");
 const selectedIntervention = ref("");
-const interventionProducts = getInterventionProductNames();
+const activeTab = ref("core");
+
+const INTERVENTION_MATERIAL_TYPES = new Set([
+  "Reading Intervention",
+  "Both ELA Core and Reading Intervention",
+]);
+
+function getSchoolInterventionProducts(school) {
+  const fromField = school.interventionProducts ?? [];
+  const fromCurricula = (school.elaCurricula ?? [])
+    .filter((e) => INTERVENTION_MATERIAL_TYPES.has(e?.reportedMaterialType))
+    .map((e) => e?.product?.trim())
+    .filter(Boolean);
+  return [...new Set([...fromField, ...fromCurricula])];
+}
 
 function getCurriculumLabel(school) {
   const first = school.elaCurricula?.[0];
   return first?.product ?? first?.provider ?? "";
 }
+
+const usedInterventionProducts = computed(() => {
+  const source = selectedState.value
+    ? schools.value.filter((s) => s.state === selectedState.value)
+    : schools.value;
+  const products = new Set();
+  for (const school of source) {
+    for (const p of getSchoolInterventionProducts(school)) {
+      products.add(p);
+    }
+  }
+  return [...products].sort();
+});
 
 const uniqueCurriculumProducts = computed(() => {
   const products = new Set();
@@ -94,6 +158,13 @@ watch(selectedState, (val) => {
   router.replace({ query: val ? { state: val } : {} });
   searchQuery.value = "";
 });
+
+function switchTab(tab) {
+  activeTab.value = tab;
+  selectedCurriculum.value = "";
+  selectedIntervention.value = "";
+  searchQuery.value = "";
+}
 
 function stateLabel(abbr) {
   return STATE_NAMES[abbr] ?? abbr;
@@ -139,13 +210,19 @@ const filteredSchools = computed(() => {
       if (!s.elaCurricula?.some((c) => c.product === selectedCurriculum.value)) return false;
     }
     if (selectedIntervention.value) {
-      if (!s.interventionProducts?.includes(selectedIntervention.value)) return false;
+      if (!getSchoolInterventionProducts(s).includes(selectedIntervention.value)) return false;
+    }
+    if (activeTab.value === "intervention" && !selectedIntervention.value) {
+      if (getSchoolInterventionProducts(s).length === 0) return false;
     }
     if (q)
       return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
     return true;
   });
   return [...list].sort((a, b) => {
+    const aIsDistrict = a.level === "district" ? 0 : 1;
+    const bIsDistrict = b.level === "district" ? 0 : 1;
+    if (aIsDistrict !== bIsDistrict) return aIsDistrict - bIsDistrict;
     const stateA = a.state ?? "",
       stateB = b.state ?? "";
     if (stateA !== stateB) return stateA.localeCompare(stateB);
@@ -157,6 +234,13 @@ const filteredSchools = computed(() => {
     return nameA.localeCompare(nameB);
   });
 });
+
+const filteredDistricts = computed(() =>
+  filteredSchools.value.filter((s) => s.level === "district"),
+);
+const filteredNonDistricts = computed(() =>
+  filteredSchools.value.filter((s) => s.level !== "district"),
+);
 
 async function fetchSchools() {
   loading.value = true;
@@ -288,9 +372,26 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
+        </div>
 
-          <span class="filters-or">Or, pick a curricular product.</span>
+        <div class="tab-bar">
+          <button
+            class="tab-btn"
+            :class="{ active: activeTab === 'core' }"
+            @click="switchTab('core')"
+          >
+            Core / Foundational
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: activeTab === 'intervention' }"
+            @click="switchTab('intervention')"
+          >
+            Intervention
+          </button>
+        </div>
 
+        <div v-if="activeTab === 'core'" class="filters-row">
           <div class="curriculum-filter">
             <select v-model="selectedCurriculum" class="curriculum-select">
               <option value="">All curricula</option>
@@ -306,13 +407,11 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="filters-row">
-          <span class="filters-or">Or, explore intervention products.</span>
-
+        <div v-if="activeTab === 'intervention'" class="filters-row">
           <div class="curriculum-filter">
             <select v-model="selectedIntervention" class="curriculum-select">
               <option value="">All intervention products</option>
-              <option v-for="p in interventionProducts" :key="p" :value="p">{{ p }}</option>
+              <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
             </select>
             <button
               v-if="selectedIntervention"
@@ -325,7 +424,7 @@ onUnmounted(() => {
         </div>
 
         <div v-if="!selectedState && !selectedCurriculum && !selectedIntervention" class="empty">
-          Select a state or curriculum to view records.
+          Select a state to view records.
         </div>
 
         <div v-else class="search-row">
@@ -349,29 +448,71 @@ onUnmounted(() => {
             <tr>
               <th>State</th>
               <th>District</th>
-              <th v-if="!selectedIntervention">School</th>
-              <th>Curriculum</th>
-              <th v-if="selectedIntervention">Interventions</th>
+              <th v-if="activeTab === 'core'">School</th>
+              <th v-if="activeTab === 'core'">Core Curriculum</th>
+              <th v-if="activeTab === 'core'">Foundational / Phonics</th>
+              <th v-if="activeTab === 'intervention'">Interventions</th>
               <th v-if="isAdmin"></th>
             </tr>
           </thead>
           <tbody>
             <tr
-              v-for="school in filteredSchools"
+              v-for="school in filteredDistricts"
               :key="school.id"
               class="clickable-row"
               @click="router.push(`/view/${school.id}`)"
             >
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
-              <td v-if="!selectedIntervention">
-                {{ school.level === "district" ? school.districtName : school.schoolName }}
-                <span v-if="school.level === 'district'" class="level-badge">District</span>
+              <td v-if="activeTab === 'core'">
+                {{ school.districtName }}
+                <span class="level-badge">District</span>
               </td>
-              <td class="curriculum-cell">{{ getCurriculumLabel(school) }}</td>
-              <td v-if="selectedIntervention" class="interventions-cell">
+              <td v-if="activeTab === 'core'" class="curriculum-cell">
+                {{ getCoreCurricula(school).join(", ") }}
+              </td>
+              <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
+                {{ getFoundationalCurricula(school).join(", ") }}
+              </td>
+              <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
-                  v-for="p in school.interventionProducts"
+                  v-for="p in getSchoolInterventionProducts(school)"
+                  :key="p"
+                  class="intervention-tag"
+                  :class="{ highlight: p === selectedIntervention }"
+                  >{{ p }}</span
+                >
+              </td>
+              <td v-if="isAdmin" class="actions">
+                <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
+              </td>
+            </tr>
+
+            <tr
+              v-if="filteredDistricts.length && filteredNonDistricts.length"
+              class="section-separator"
+            >
+              <td colspan="10">Individual Schools</td>
+            </tr>
+
+            <tr
+              v-for="school in filteredNonDistricts"
+              :key="school.id"
+              class="clickable-row"
+              @click="router.push(`/view/${school.id}`)"
+            >
+              <td>{{ school.state }}</td>
+              <td>{{ school.districtName }}</td>
+              <td v-if="activeTab === 'core'">{{ school.schoolName }}</td>
+              <td v-if="activeTab === 'core'" class="curriculum-cell">
+                {{ getCoreCurricula(school).join(", ") }}
+              </td>
+              <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
+                {{ getFoundationalCurricula(school).join(", ") }}
+              </td>
+              <td v-if="activeTab === 'intervention'" class="interventions-cell">
+                <span
+                  v-for="p in getSchoolInterventionProducts(school)"
                   :key="p"
                   class="intervention-tag"
                   :class="{ highlight: p === selectedIntervention }"
@@ -774,6 +915,37 @@ th {
   background-color: #fdd;
 }
 
+.tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.tab-btn {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  margin-bottom: -2px;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: #444;
+}
+
+.tab-btn.active {
+  color: #4a90a4;
+  border-bottom-color: #4a90a4;
+}
+
 .curriculum-filter {
   display: flex;
   align-items: center;
@@ -823,6 +995,22 @@ th {
 .curriculum-cell {
   color: #555;
   font-size: 0.9rem;
+}
+
+.foundational-cell {
+  color: #888;
+}
+
+.section-separator td {
+  background: #f8f9fa;
+  color: #999;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 1rem;
+  border-top: 2px solid #e8e8e8;
+  cursor: default;
 }
 
 .level-badge {
