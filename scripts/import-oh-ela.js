@@ -91,6 +91,9 @@ function parseCSV(filePath) {
     "Joint Vocational School District",
   ]);
 
+  // Only true public school districts get level="district"
+  const DISTRICT_ORG_TYPES = new Set(["Public District", "Joint Vocational School District"]);
+
   const orgs = new Map(); // irn -> { name, orgType, curricula: Set entries }
 
   for (const row of rows) {
@@ -102,7 +105,8 @@ function parseCSV(filePath) {
     const start = parseGrade(dewGrades.trim().split(/\s*-\s*/)[0]);
     if (start < 0 || start > 6) continue; // skip PreK-only and 7+ rows
 
-    if (!orgs.has(irn)) orgs.set(irn, { name, orgType, entries: [] });
+    if (!orgs.has(irn))
+      orgs.set(irn, { name, orgType, isDistrict: DISTRICT_ORG_TYPES.has(orgType), entries: [] });
     const { product, provider } = parseProduct(rawProduct);
     const gradeRange = formatGradeRange(dewGrades);
     orgs.get(irn).entries.push({ gradeRange, provider, product, year: null, reportedMaterialType });
@@ -150,15 +154,15 @@ async function importData() {
     process.exit(0);
   }
 
-  const existingSnap = await getDocs(
-    query(collection(db, "schools"), where("state", "==", "OH"), where("level", "==", "district")),
+  const existingSnap = await getDocs(query(collection(db, "schools"), where("state", "==", "OH")));
+  const existingIRNs = new Set(
+    existingSnap.docs.map((d) => d.data().districtId ?? d.data().schoolId).filter(Boolean),
   );
-  const existingIRNs = new Set(existingSnap.docs.map((d) => d.data().districtId).filter(Boolean));
 
   let imported = 0;
   let skipped = 0;
 
-  for (const [irn, { name, entries }] of orgs) {
+  for (const [irn, { name, isDistrict, entries }] of orgs) {
     if (existingIRNs.has(irn)) {
       console.log(`  skip (exists): ${name}`);
       skipped++;
@@ -167,11 +171,11 @@ async function importData() {
 
     await addDoc(collection(db, "schools"), {
       state: "OH",
-      level: "district",
-      districtId: irn,
-      districtName: name,
-      schoolId: null,
-      schoolName: null,
+      level: isDistrict ? "district" : "school",
+      districtId: isDistrict ? irn : null,
+      districtName: isDistrict ? name : null,
+      schoolId: isDistrict ? null : irn,
+      schoolName: isDistrict ? null : name,
       elaCurricula: entries,
       source: "oh-odew-hqim-report-card",
       sourceUrl: SOURCE_URL,
