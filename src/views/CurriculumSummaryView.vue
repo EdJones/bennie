@@ -116,29 +116,36 @@ const tableData = computed(() => {
 
     if (products.length === 0) {
       noDataSchools.add(school.id);
-      continue;
-    }
+    } else {
+      let hasUnmatched = false;
+      for (const entry of curricula) {
+        const product = entry?.product?.trim();
+        if (!product) continue;
+        if (entry?.reportedMaterialType === "Reading Intervention") continue;
+        const match = getProgramForProduct(product);
+        if (match) {
+          const key = `${match.categoryName}||${match.programName}`;
+          if (!programSchools[key]) programSchools[key] = new Set();
+          programSchools[key].add(school.id);
+        } else {
+          hasUnmatched = true;
+        }
+      }
 
-    let hasUnmatched = false;
-    for (const entry of curricula) {
-      const product = entry?.product?.trim();
-      if (!product) continue;
-      if (entry?.reportedMaterialType === "Reading Intervention") continue;
-      const match = getProgramForProduct(product);
-      if (match) {
-        const key = `${match.categoryName}||${match.programName}`;
-        if (!programSchools[key]) programSchools[key] = new Set();
-        programSchools[key].add(school.id);
-      } else {
-        hasUnmatched = true;
+      if (hasUnmatched) homegrownSchools.add(school.id);
+
+      for (const entry of curricula) {
+        if (!INTERVENTION_TYPES.has(entry?.reportedMaterialType)) continue;
+        const product = entry?.product?.trim();
+        if (!product) continue;
+        const match = getProgramForProduct(product);
+        const progName = match ? match.programName : product;
+        if (!interventionProgramSchools[progName]) interventionProgramSchools[progName] = new Set();
+        interventionProgramSchools[progName].add(school.id);
       }
     }
 
-    if (hasUnmatched) homegrownSchools.add(school.id);
-
-    for (const entry of curricula) {
-      if (!INTERVENTION_TYPES.has(entry?.reportedMaterialType)) continue;
-      const product = entry?.product?.trim();
+    for (const product of school.interventionProducts ?? []) {
       if (!product) continue;
       const match = getProgramForProduct(product);
       const progName = match ? match.programName : product;
