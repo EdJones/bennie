@@ -59,6 +59,45 @@ import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useAuth } from "../composables/useAuth";
 import { logSchoolDelete } from "../services/activityLog";
 import { getSchoolCountForDistricts } from "../services/nces";
+import { getProgramForProduct } from "../data/curriculumCategories";
+
+const CORE_CATEGORIES = new Set([
+  "Balanced Literacy",
+  "Basals",
+  "Book-Centered & Knowledge-Building",
+]);
+
+function getCoreCurricula(school) {
+  const seen = new Set();
+  const results = [];
+  for (const entry of school.elaCurricula ?? []) {
+    const product = entry?.product?.trim();
+    if (!product) continue;
+    if (INTERVENTION_MATERIAL_TYPES.has(entry?.reportedMaterialType)) continue;
+    const match = getProgramForProduct(product);
+    if (match && CORE_CATEGORIES.has(match.categoryName) && !seen.has(match.programName)) {
+      seen.add(match.programName);
+      results.push(match.programName);
+    }
+  }
+  return results;
+}
+
+function getFoundationalCurricula(school) {
+  const seen = new Set();
+  const results = [];
+  for (const entry of school.elaCurricula ?? []) {
+    const product = entry?.product?.trim();
+    if (!product) continue;
+    if (INTERVENTION_MATERIAL_TYPES.has(entry?.reportedMaterialType)) continue;
+    const match = getProgramForProduct(product);
+    if (match && match.categoryName === "Foundational / Phonics" && !seen.has(match.programName)) {
+      seen.add(match.programName);
+      results.push(match.programName);
+    }
+  }
+  return results;
+}
 
 const router = useRouter();
 const route = useRoute();
@@ -400,7 +439,8 @@ onUnmounted(() => {
               <th>State</th>
               <th>District</th>
               <th v-if="activeTab === 'core'">School</th>
-              <th v-if="activeTab === 'core'">Curriculum</th>
+              <th v-if="activeTab === 'core'">Core Curriculum</th>
+              <th v-if="activeTab === 'core'">Foundational / Phonics</th>
               <th v-if="activeTab === 'intervention'">Interventions</th>
               <th v-if="isAdmin"></th>
             </tr>
@@ -419,7 +459,10 @@ onUnmounted(() => {
                 <span v-if="school.level === 'district'" class="level-badge">District</span>
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell">
-                {{ getCurriculumLabel(school) }}
+                {{ getCoreCurricula(school).join(", ") }}
+              </td>
+              <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
+                {{ getFoundationalCurricula(school).join(", ") }}
               </td>
               <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
@@ -906,6 +949,10 @@ th {
 .curriculum-cell {
   color: #555;
   font-size: 0.9rem;
+}
+
+.foundational-cell {
+  color: #888;
 }
 
 .level-badge {
