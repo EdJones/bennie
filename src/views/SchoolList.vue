@@ -71,7 +71,7 @@ const dropdownRef = ref(null);
 const searchQuery = ref("");
 const selectedCurriculum = ref("");
 const selectedIntervention = ref("");
-const showInterventionPanel = ref(false);
+const activeTab = ref("core");
 
 const INTERVENTION_MATERIAL_TYPES = new Set([
   "Reading Intervention",
@@ -93,8 +93,11 @@ function getCurriculumLabel(school) {
 }
 
 const usedInterventionProducts = computed(() => {
+  const source = selectedState.value
+    ? schools.value.filter((s) => s.state === selectedState.value)
+    : schools.value;
   const products = new Set();
-  for (const school of schools.value) {
+  for (const school of source) {
     for (const p of getSchoolInterventionProducts(school)) {
       products.add(p);
     }
@@ -116,6 +119,13 @@ watch(selectedState, (val) => {
   router.replace({ query: val ? { state: val } : {} });
   searchQuery.value = "";
 });
+
+function switchTab(tab) {
+  activeTab.value = tab;
+  selectedCurriculum.value = "";
+  selectedIntervention.value = "";
+  searchQuery.value = "";
+}
 
 function stateLabel(abbr) {
   return STATE_NAMES[abbr] ?? abbr;
@@ -162,6 +172,9 @@ const filteredSchools = computed(() => {
     }
     if (selectedIntervention.value) {
       if (!getSchoolInterventionProducts(s).includes(selectedIntervention.value)) return false;
+    }
+    if (activeTab.value === "intervention" && !selectedIntervention.value) {
+      if (getSchoolInterventionProducts(s).length === 0) return false;
     }
     if (q)
       return s.districtName?.toLowerCase().includes(q) || s.schoolName?.toLowerCase().includes(q);
@@ -310,9 +323,26 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
+        </div>
 
-          <span class="filters-or">Or, pick a curricular product.</span>
+        <div class="tab-bar">
+          <button
+            class="tab-btn"
+            :class="{ active: activeTab === 'core' }"
+            @click="switchTab('core')"
+          >
+            Core / Foundational
+          </button>
+          <button
+            class="tab-btn"
+            :class="{ active: activeTab === 'intervention' }"
+            @click="switchTab('intervention')"
+          >
+            Intervention
+          </button>
+        </div>
 
+        <div v-if="activeTab === 'core'" class="filters-row">
           <div class="curriculum-filter">
             <select v-model="selectedCurriculum" class="curriculum-select">
               <option value="">All curricula</option>
@@ -328,41 +358,24 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="filters-row">
-          <button
-            class="intervention-toggle"
-            :class="{ active: showInterventionPanel || selectedIntervention }"
-            @click="showInterventionPanel = !showInterventionPanel"
-          >
-            Explore Intervention Products
-            <span class="toggle-chevron">{{ showInterventionPanel ? "▴" : "▾" }}</span>
-          </button>
-
-          <template v-if="showInterventionPanel || selectedIntervention">
-            <div v-if="loading" class="intervention-note">Loading…</div>
-            <div v-else-if="!usedInterventionProducts.length" class="intervention-note">
-              No intervention data recorded yet.
-            </div>
-            <template v-else>
-              <div class="curriculum-filter">
-                <select v-model="selectedIntervention" class="curriculum-select">
-                  <option value="">All intervention products</option>
-                  <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
-                </select>
-                <button
-                  v-if="selectedIntervention"
-                  class="clear-curriculum"
-                  @click="selectedIntervention = ''"
-                >
-                  ×
-                </button>
-              </div>
-            </template>
-          </template>
+        <div v-if="activeTab === 'intervention'" class="filters-row">
+          <div class="curriculum-filter">
+            <select v-model="selectedIntervention" class="curriculum-select">
+              <option value="">All intervention products</option>
+              <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
+            </select>
+            <button
+              v-if="selectedIntervention"
+              class="clear-curriculum"
+              @click="selectedIntervention = ''"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         <div v-if="!selectedState && !selectedCurriculum && !selectedIntervention" class="empty">
-          Select a state or curriculum to view records.
+          Select a state to view records.
         </div>
 
         <div v-else class="search-row">
@@ -386,9 +399,9 @@ onUnmounted(() => {
             <tr>
               <th>State</th>
               <th>District</th>
-              <th v-if="!selectedIntervention">School</th>
-              <th>Curriculum</th>
-              <th v-if="selectedIntervention">Interventions</th>
+              <th v-if="activeTab === 'core'">School</th>
+              <th v-if="activeTab === 'core'">Curriculum</th>
+              <th v-if="activeTab === 'intervention'">Interventions</th>
               <th v-if="isAdmin"></th>
             </tr>
           </thead>
@@ -401,12 +414,14 @@ onUnmounted(() => {
             >
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
-              <td v-if="!selectedIntervention">
+              <td v-if="activeTab === 'core'">
                 {{ school.level === "district" ? school.districtName : school.schoolName }}
                 <span v-if="school.level === 'district'" class="level-badge">District</span>
               </td>
-              <td class="curriculum-cell">{{ getCurriculumLabel(school) }}</td>
-              <td v-if="selectedIntervention" class="interventions-cell">
+              <td v-if="activeTab === 'core'" class="curriculum-cell">
+                {{ getCurriculumLabel(school) }}
+              </td>
+              <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
                   v-for="p in getSchoolInterventionProducts(school)"
                   :key="p"
@@ -811,38 +826,35 @@ th {
   background-color: #fdd;
 }
 
-.intervention-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background: white;
-  border: 1px solid #d0d0d0;
-  border-radius: 8px;
+.tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.tab-btn {
+  padding: 0.6rem 1.25rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
   font-size: 0.9rem;
-  color: #4a90a4;
+  font-weight: 500;
+  color: #888;
   cursor: pointer;
-  white-space: nowrap;
+  margin-bottom: -2px;
   transition:
-    border-color 0.15s,
-    background 0.15s;
+    color 0.15s,
+    border-color 0.15s;
 }
 
-.intervention-toggle:hover,
-.intervention-toggle.active {
-  border-color: #4a90a4;
-  background: #f0f7fa;
+.tab-btn:hover {
+  color: #444;
 }
 
-.toggle-chevron {
-  font-size: 0.7rem;
-  opacity: 0.7;
-}
-
-.intervention-note {
-  font-size: 0.85rem;
-  color: #999;
-  align-self: center;
+.tab-btn.active {
+  color: #4a90a4;
+  border-bottom-color: #4a90a4;
 }
 
 .curriculum-filter {
