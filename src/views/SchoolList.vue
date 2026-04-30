@@ -465,8 +465,7 @@ onUnmounted(() => {
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
               <td v-if="activeTab === 'core'">
-                {{ school.districtName }}
-                <span class="level-badge">District</span>
+                <span class="level-badge">District-Wide</span>
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell">
                 {{ getCoreCurricula(school).join(", ") }}
