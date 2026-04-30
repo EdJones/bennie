@@ -73,7 +73,7 @@ function getCoreCurricula(school) {
   for (const entry of school.elaCurricula ?? []) {
     const product = entry?.product?.trim();
     if (!product) continue;
-    if (INTERVENTION_MATERIAL_TYPES.has(entry?.reportedMaterialType)) continue;
+    if (entry?.reportedMaterialType === "Reading Intervention") continue;
     const match = getProgramForProduct(product);
     if (match && CORE_CATEGORIES.has(match.categoryName) && !seen.has(match.programName)) {
       seen.add(match.programName);
@@ -89,7 +89,7 @@ function getFoundationalCurricula(school) {
   for (const entry of school.elaCurricula ?? []) {
     const product = entry?.product?.trim();
     if (!product) continue;
-    if (INTERVENTION_MATERIAL_TYPES.has(entry?.reportedMaterialType)) continue;
+    if (entry?.reportedMaterialType === "Reading Intervention") continue;
     const match = getProgramForProduct(product);
     if (match && match.categoryName === "Foundational / Phonics" && !seen.has(match.programName)) {
       seen.add(match.programName);
@@ -465,8 +465,7 @@ onUnmounted(() => {
               <td>{{ school.state }}</td>
               <td>{{ school.districtName }}</td>
               <td v-if="activeTab === 'core'">
-                {{ school.districtName }}
-                <span class="level-badge">District</span>
+                <span class="level-badge">District-Wide</span>
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell">
                 {{ getCoreCurricula(school).join(", ") }}
