@@ -180,7 +180,8 @@ const unmatchedProducts = computed(() => {
     .map(([product, s]) => ({
       product,
       count: s.size,
-      grades: gradeRangeSets[product] ? [...gradeRangeSets[product]].sort().join(", ") : "",
+      grades:
+        gradeRangeSets[product]?.size <= 4 ? [...gradeRangeSets[product]].sort().join(", ") : "",
     }))
     .sort((a, b) => b.count - a.count);
 });
