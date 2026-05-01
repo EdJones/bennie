@@ -72,11 +72,22 @@ const showFoundationalSection = computed(() => {
   return coreCurricula.value.length > 0 || supplementalCurricula.value.length > 0;
 });
 
+const showInterventionSection = computed(() => {
+  if (interventionCurricula.value.length || legacyInterventionProducts.value.length) return true;
+  const state = school.value?.state;
+  if (state !== "MA" && state !== "CT") return false;
+  return (
+    coreCurricula.value.length > 0 ||
+    foundationalCurricula.value.length > 0 ||
+    supplementalCurricula.value.length > 0
+  );
+});
+
 const hasMultipleCurriculumSections = computed(() => {
   let count = 0;
   if (coreCurricula.value.length) count++;
   if (showFoundationalSection.value) count++;
-  if (interventionCurricula.value.length || legacyInterventionProducts.value.length) count++;
+  if (showInterventionSection.value) count++;
   if (supplementalCurricula.value.length) count++;
   return count >= 2;
 });
@@ -190,21 +201,12 @@ function formatBoolean(value) {
             </p>
           </template>
 
-          <p
-            v-if="
-              (school.state === 'MA' || school.state === 'CT') &&
-              !interventionCurricula.length &&
-              !legacyInterventionProducts.length
-            "
-            class="data-note"
-          >
-            {{ school.state === "MA" ? "Massachusetts DESE" : "Connecticut SDE" }}
-            does not separately report reading intervention programs.
-          </p>
-
-          <template v-if="interventionCurricula.length || legacyInterventionProducts.length">
+          <template v-if="showInterventionSection">
             <h3 class="curriculum-section-heading">Intervention</h3>
-            <div class="curriculum-entries">
+            <div
+              v-if="interventionCurricula.length || legacyInterventionProducts.length"
+              class="curriculum-entries"
+            >
               <div
                 v-for="(entry, i) in interventionCurricula"
                 :key="'int-' + i"
@@ -232,6 +234,10 @@ function formatBoolean(value) {
                 <div class="curriculum-name">{{ p }}</div>
               </div>
             </div>
+            <p v-else class="data-note">
+              {{ school.state === "MA" ? "Massachusetts DESE" : "Connecticut SDE" }} does not
+              separately report reading intervention programs.
+            </p>
           </template>
 
           <template v-if="supplementalCurricula.length">
