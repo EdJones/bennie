@@ -176,13 +176,25 @@ const unmatchedProducts = computed(() => {
       }
     }
   }
+  function isUpperElementaryGrade(g) {
+    const n = g
+      .trim()
+      .toLowerCase()
+      .replace(/^grades?\s*/, "");
+    return n === "6" || n === "5-6";
+  }
   return Object.entries(schoolSets)
-    .map(([product, s]) => ({
-      product,
-      count: s.size,
-      grades:
-        gradeRangeSets[product]?.size <= 4 ? [...gradeRangeSets[product]].sort().join(", ") : "",
-    }))
+    .map(([product, s]) => {
+      const gradeSet = gradeRangeSets[product];
+      const upperElementary =
+        gradeSet?.size > 0 && [...gradeSet].every((g) => isUpperElementaryGrade(g));
+      return {
+        product,
+        count: s.size,
+        grades: gradeSet?.size <= 4 ? [...gradeSet].sort().join(", ") : "",
+        upperElementary,
+      };
+    })
     .sort((a, b) => b.count - a.count);
 });
 
@@ -489,7 +501,7 @@ const visibleRows = computed(() => {
       <summary>What's in the Homegrown category?</summary>
 
       <div class="detail-sections">
-        <div v-if="unmatchedProducts.length > 0" class="detail-section">
+        <div v-if="unmatchedProducts.some((r) => !r.upperElementary)" class="detail-section">
           <h3>Supplemental Bundle — unmatched product strings</h3>
           <table class="detail-table">
             <thead>
@@ -500,7 +512,10 @@ const visibleRows = computed(() => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in unmatchedProducts" :key="row.product">
+              <tr
+                v-for="row in unmatchedProducts.filter((r) => !r.upperElementary)"
+                :key="row.product"
+              >
                 <td class="clickable" @click="openUnmatchedModal(row.product)">
                   {{ row.product }}
                 </td>
@@ -511,19 +526,26 @@ const visibleRows = computed(() => {
           </table>
         </div>
 
-        <div v-if="noDataByProvider.length > 0" class="detail-section">
-          <h3>No curriculum recorded — breakdown by provider</h3>
+        <div v-if="unmatchedProducts.some((r) => r.upperElementary)" class="detail-section">
+          <h3>Upper Elementary — unmatched product strings</h3>
           <table class="detail-table">
             <thead>
               <tr>
-                <th>Provider</th>
+                <th>Product string</th>
+                <th>Grades</th>
                 <th class="col-number">Records</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="[provider, count] in noDataByProvider" :key="provider">
-                <td :class="{ muted: provider === '(no provider)' }">{{ provider }}</td>
-                <td class="number-cell">{{ count.toLocaleString() }}</td>
+              <tr
+                v-for="row in unmatchedProducts.filter((r) => r.upperElementary)"
+                :key="row.product"
+              >
+                <td class="clickable" @click="openUnmatchedModal(row.product)">
+                  {{ row.product }}
+                </td>
+                <td class="grade-cell">{{ row.grades }}</td>
+                <td class="number-cell">{{ row.count.toLocaleString() }}</td>
               </tr>
             </tbody>
           </table>
