@@ -72,11 +72,22 @@ const showFoundationalSection = computed(() => {
   return coreCurricula.value.length > 0 || supplementalCurricula.value.length > 0;
 });
 
+const showInterventionSection = computed(() => {
+  if (interventionCurricula.value.length || legacyInterventionProducts.value.length) return true;
+  const state = school.value?.state;
+  if (state !== "MA" && state !== "CT") return false;
+  return (
+    coreCurricula.value.length > 0 ||
+    foundationalCurricula.value.length > 0 ||
+    supplementalCurricula.value.length > 0
+  );
+});
+
 const hasMultipleCurriculumSections = computed(() => {
   let count = 0;
   if (coreCurricula.value.length) count++;
   if (showFoundationalSection.value) count++;
-  if (interventionCurricula.value.length || legacyInterventionProducts.value.length) count++;
+  if (showInterventionSection.value) count++;
   if (supplementalCurricula.value.length) count++;
   return count >= 2;
 });
@@ -108,19 +119,43 @@ function formatBoolean(value) {
 
       <div class="info-card primary">
         <h2>ELA Curriculum</h2>
+
+        <p v-if="school.state === 'CT'" class="data-note source-note">
+          CT SDE K–3 approved program list (self-reported, {{ school.schoolYear ?? "2024–25" }}).
+          Core and Foundational / Phonics groupings shown below are inferred from program names — CT
+          districts report all approved programs as a single combined list.
+        </p>
+        <p v-if="school.hasWaiver" class="data-note waiver-note">
+          This district received a CSDE waiver to use an alternative or district-created curriculum.
+        </p>
+
         <div
           v-if="
             !coreCurricula.length &&
             !foundationalCurricula.length &&
             !interventionCurricula.length &&
             !legacyInterventionProducts.length &&
-            !supplementalCurricula.length
+            !supplementalCurricula.length &&
+            !school.hasWaiver &&
+            !school.didNotReport
           "
           class="empty-state"
         >
           No curriculum data on record.
         </div>
-        <template v-else>
+        <p v-if="school.didNotReport" class="data-note">
+          {{ school.districtName || school.schoolName }} did not report curriculum data for
+          {{ school.schoolYear ?? "this school year" }}.
+        </p>
+        <template
+          v-if="
+            coreCurricula.length ||
+            foundationalCurricula.length ||
+            interventionCurricula.length ||
+            legacyInterventionProducts.length ||
+            supplementalCurricula.length
+          "
+        >
           <template v-if="coreCurricula.length">
             <h3 v-if="hasMultipleCurriculumSections" class="curriculum-section-heading">
               Core Curriculum
@@ -147,7 +182,10 @@ function formatBoolean(value) {
                 :key="'found-' + i"
                 class="curriculum-entry"
               >
-                <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
+                <div class="curriculum-name">
+                  {{ entry.product || entry.provider || "—"
+                  }}<sup v-if="school.state === 'CT'" class="inferred-marker">*</sup>
+                </div>
                 <div v-if="entry.product && entry.provider" class="curriculum-byline">
                   {{ entry.provider }}
                 </div>
@@ -163,20 +201,12 @@ function formatBoolean(value) {
             </p>
           </template>
 
-          <p
-            v-if="
-              school.state === 'MA' &&
-              !interventionCurricula.length &&
-              !legacyInterventionProducts.length
-            "
-            class="data-note"
-          >
-            Massachusetts DESE does not separately report reading intervention programs.
-          </p>
-
-          <template v-if="interventionCurricula.length || legacyInterventionProducts.length">
+          <template v-if="showInterventionSection">
             <h3 class="curriculum-section-heading">Intervention</h3>
-            <div class="curriculum-entries">
+            <div
+              v-if="interventionCurricula.length || legacyInterventionProducts.length"
+              class="curriculum-entries"
+            >
               <div
                 v-for="(entry, i) in interventionCurricula"
                 :key="'int-' + i"
@@ -204,6 +234,10 @@ function formatBoolean(value) {
                 <div class="curriculum-name">{{ p }}</div>
               </div>
             </div>
+            <p v-else class="data-note">
+              {{ school.state === "MA" ? "Massachusetts DESE" : "Connecticut SDE" }} does not
+              separately report reading intervention programs.
+            </p>
           </template>
 
           <template v-if="supplementalCurricula.length">
@@ -631,6 +665,26 @@ function formatBoolean(value) {
   font-size: 0.8rem;
   font-style: italic;
   color: #999;
+}
+
+.source-note {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.inferred-marker {
+  color: #aaa;
+  font-size: 0.7em;
+  margin-left: 0.05em;
+  vertical-align: super;
+}
+
+.waiver-note {
+  color: #7a6a00;
+  background: #fffbe6;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-style: normal;
 }
 
 /* Chip system */

@@ -2,10 +2,14 @@
  * Imports Connecticut approved K-3 reading curriculum data by district from the
  * CT SDE portal and writes district-level records to Firestore.
  *
+ * CT districts self-report their approved K-3 programs as a combined list — no
+ * distinction is made between core and foundational/phonics. Waiver districts and
+ * the one district that did not report are imported with flags (hasWaiver / didNotReport).
+ *
  * Run with:
  *   node --env-file=.env scripts/import-ct-ela.js [--dry-run]
  *
- * Dedup key: districtName + state "CT". Existing records are skipped.
+ * Existing records are updated (upsert by districtName + state=CT).
  */
 
 import https from "https";
@@ -15,6 +19,8 @@ import {
   collection,
   getDocs,
   addDoc,
+  doc,
+  updateDoc,
   query,
   where,
   Timestamp,
@@ -22,6 +28,7 @@ import {
 
 const SOURCE_URL =
   "https://portal.ct.gov/sde/academic-office/center-for-literacy-research-and-reading-success/information-about-districts-and-charter-schools/approved-k-3-reading-curriculum-models-or-programs-by-district";
+const SCHOOL_YEAR = "2024–25";
 
 const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
@@ -110,10 +117,20 @@ function splitPrograms(text) {
 }
 
 function buildCurricula(currText) {
-  const skip = ["did not report", "district-adopted program", "waiver"];
-  if (skip.some((s) => currText.toLowerCase().includes(s))) return [];
+  const lower = currText.toLowerCase();
+  if (lower.includes("did not report") || lower.includes("district-adopted program")) return [];
 
-  const bands = splitGradeBands(currText);
+  // Strip waiver-specific phrases so remaining programs can be parsed normally
+  const cleaned = currText
+    .replace(
+      /[;,]?\s*(?:and\s+)?[Rr]eceived?\s+a\s+waiver\s+to\s+use\s+district-created\s+curriculum\.?/gi,
+      "",
+    )
+    .trim();
+
+  if (!cleaned) return [];
+
+  const bands = splitGradeBands(cleaned);
 
   if (bands) {
     // Grade-banded entry (e.g. Ashford, Wilton)
@@ -129,7 +146,7 @@ function buildCurricula(currText) {
 
   // All programs apply to K-3
   const result = [];
-  for (const token of splitPrograms(currText)) {
+  for (const token of splitPrograms(cleaned)) {
     const parsed = parseProgram(token);
     if (parsed?.product) result.push({ gradeRange: "K-3", ...parsed, year: null });
   }
@@ -142,14 +159,22 @@ function parsePage(html) {
 
   const districts = new Map();
   for (const match of html.matchAll(rowRe)) {
-    const name = cleanHtml(match[1]);
+    const rawName = cleanHtml(match[1]);
     const currText = cleanHtml(match[2]);
-    if (!name) continue;
+    if (!rawName) continue;
+
+    const hasWaiver = /waiver/i.test(rawName) || /waiver/i.test(currText);
+    const didNotReport = /did not report/i.test(currText);
+
+    // Strip the waiver label from the district name
+    const districtName = rawName.replace(/\s*\(Approved CSDE Waiver\)\s*/gi, "").trim();
 
     const curricula = buildCurricula(currText);
-    if (curricula.length === 0) continue;
 
-    districts.set(name, { districtName: name, curricula });
+    // Skip districts with no programs and no notable status (e.g. "district-adopted program")
+    if (curricula.length === 0 && !hasWaiver && !didNotReport) continue;
+
+    districts.set(districtName, { districtName, curricula, hasWaiver, didNotReport });
   }
   return districts;
 }
@@ -164,8 +189,9 @@ async function importData() {
   console.log(`Parsed ${districts.size} Connecticut districts with K-3 ELA data.\n`);
 
   if (dryRun) {
-    for (const [name, { curricula }] of districts) {
-      console.log(`${name}:`);
+    for (const [name, { curricula, hasWaiver, didNotReport }] of districts) {
+      const flags = [hasWaiver && "waiver", didNotReport && "did not report"].filter(Boolean);
+      console.log(`${name}${flags.length ? ` [${flags.join(", ")}]` : ""}:`);
       for (const c of curricula) {
         console.log(
           `  ${String(c.gradeRange).padEnd(5)} ${c.product}${c.provider ? ` — ${c.provider}` : ""}`,
@@ -179,40 +205,51 @@ async function importData() {
   const existingSnap = await getDocs(
     query(collection(db, "schools"), where("state", "==", "CT"), where("level", "==", "district")),
   );
-  const existingNames = new Set(
-    existingSnap.docs.map((d) => d.data().districtName?.trim()).filter(Boolean),
+  // Map districtName -> Firestore doc ID for upsert
+  const existingDocIds = new Map(
+    existingSnap.docs.map((d) => [d.data().districtName?.trim(), d.id]).filter(([name]) => name),
   );
 
   let imported = 0;
-  let skipped = 0;
+  let updated = 0;
 
-  for (const [districtName, { curricula }] of districts) {
-    if (existingNames.has(districtName)) {
-      console.log(`  skip (exists): ${districtName}`);
-      skipped++;
-      continue;
-    }
+  for (const [districtName, { curricula, hasWaiver, didNotReport }] of districts) {
+    const flags = [hasWaiver && "[waiver]", didNotReport && "[did not report]"]
+      .filter(Boolean)
+      .join(" ");
 
-    await addDoc(collection(db, "schools"), {
-      state: "CT",
-      level: "district",
-      districtId: null,
-      districtName,
-      schoolId: null,
-      schoolName: null,
+    const updatePayload = {
       elaCurricula: curricula,
-      source: "ct-sde-k3-curriculum",
-      sourceUrl: SOURCE_URL,
-      sourceOrganization: "Connecticut State Department of Education",
-      importedAt: Timestamp.now(),
-    });
+      schoolYear: SCHOOL_YEAR,
+      ...(hasWaiver ? { hasWaiver: true } : {}),
+      ...(didNotReport ? { didNotReport: true } : {}),
+    };
 
-    console.log(`  imported: ${districtName} — ${curricula.length} curriculum entries`);
-    imported++;
-    existingNames.add(districtName);
+    const existingId = existingDocIds.get(districtName);
+    if (existingId) {
+      await updateDoc(doc(db, "schools", existingId), updatePayload);
+      console.log(`  updated: ${districtName} — ${curricula.length} curricula ${flags}`.trimEnd());
+      updated++;
+    } else {
+      await addDoc(collection(db, "schools"), {
+        state: "CT",
+        level: "district",
+        districtId: null,
+        districtName,
+        schoolId: null,
+        schoolName: null,
+        source: "ct-sde-k3-curriculum",
+        sourceUrl: SOURCE_URL,
+        sourceOrganization: "Connecticut State Department of Education",
+        importedAt: Timestamp.now(),
+        ...updatePayload,
+      });
+      console.log(`  imported: ${districtName} — ${curricula.length} curricula ${flags}`.trimEnd());
+      imported++;
+    }
   }
 
-  console.log(`\nDone. Imported: ${imported}, Skipped: ${skipped}`);
+  console.log(`\nDone. Imported: ${imported}, Updated: ${updated}`);
   process.exit(0);
 }
 

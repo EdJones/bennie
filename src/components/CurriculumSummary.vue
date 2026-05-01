@@ -298,60 +298,63 @@ const visibleRows = computed(() => {
       available for this tab.
     </p>
 
-    <table
-      v-if="!(activeTab === 'intervention' && stateLabel === 'Massachusetts')"
-      class="summary-table"
-    >
-      <thead>
-        <tr>
-          <th class="col-category">Category</th>
-          <th class="col-program">Program</th>
-          <th class="col-number">Schools</th>
-          <th class="col-number">Share of Adoptions</th>
-          <th class="col-number">Category Share</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(row, i) in visibleRows" :key="i" :style="{ background: row.categoryColor }">
-          <template v-if="row.isToggleRow">
-            <td colspan="3" class="toggle-cell" @click="toggleCategory(row.categoryName)">
-              <span v-if="!row.isExpanded">Show {{ row.hidden }} more ▾</span>
-              <span v-else>Show less ▴</span>
-            </td>
-          </template>
-          <template v-else>
-            <td
-              v-if="row.isFirstInCategory"
-              :rowspan="row.categoryRowspan"
-              :style="{ background: row.categoryColor, color: row.categoryTextColor }"
-              class="category-cell"
-            >
-              {{ row.categoryName }}
-              <p v-if="row.categoryName === 'Foundational / Phonics'" class="category-note">
-                Not all state surveys requested foundational program names.
-              </p>
-              <p v-else-if="row.categoryName === 'Intervention'" class="category-note">
-                Based on states that separately report intervention program usage. MA not included.
-              </p>
-            </td>
-            <td class="program-cell" :class="{ muted: row.programNameMuted }">
-              {{ row.programName }}
-            </td>
-            <td class="number-cell">{{ row.count > 0 ? row.count.toLocaleString() : "0" }}</td>
-            <td class="number-cell">{{ row.shareOfAdoptions }}</td>
-            <td
-              v-if="row.isFirstInCategory"
-              :rowspan="row.categoryRowspan"
-              :style="{ background: row.categoryColor }"
-              class="category-share-cell"
-            >
-              <strong>{{ row.categoryShare }}</strong>
-              <span class="category-share-count">{{ row.catTotal.toLocaleString() }}</span>
-            </td>
-          </template>
-        </tr>
-      </tbody>
-    </table>
+    <div class="table-scroll">
+      <table
+        v-if="!(activeTab === 'intervention' && stateLabel === 'Massachusetts')"
+        class="summary-table"
+      >
+        <thead>
+          <tr>
+            <th class="col-category">Category</th>
+            <th class="col-program">Program</th>
+            <th class="col-number">Schools</th>
+            <th class="col-number">Share of Adoptions</th>
+            <th class="col-number">Category Share</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(row, i) in visibleRows" :key="i" :style="{ background: row.categoryColor }">
+            <template v-if="row.isToggleRow">
+              <td colspan="3" class="toggle-cell" @click="toggleCategory(row.categoryName)">
+                <span v-if="!row.isExpanded">Show {{ row.hidden }} more ▾</span>
+                <span v-else>Show less ▴</span>
+              </td>
+            </template>
+            <template v-else>
+              <td
+                v-if="row.isFirstInCategory"
+                :rowspan="row.categoryRowspan"
+                :style="{ background: row.categoryColor, color: row.categoryTextColor }"
+                class="category-cell"
+              >
+                {{ row.categoryName }}
+                <p v-if="row.categoryName === 'Foundational / Phonics'" class="category-note">
+                  Not all state surveys requested foundational program names.
+                </p>
+                <p v-else-if="row.categoryName === 'Intervention'" class="category-note">
+                  Based on states that separately report intervention program usage. MA not
+                  included.
+                </p>
+              </td>
+              <td class="program-cell" :class="{ muted: row.programNameMuted }">
+                {{ row.programName }}
+              </td>
+              <td class="number-cell">{{ row.count > 0 ? row.count.toLocaleString() : "0" }}</td>
+              <td class="number-cell">{{ row.shareOfAdoptions }}</td>
+              <td
+                v-if="row.isFirstInCategory"
+                :rowspan="row.categoryRowspan"
+                :style="{ background: row.categoryColor }"
+                class="category-share-cell"
+              >
+                <strong>{{ row.categoryShare }}</strong>
+                <span class="category-share-count">{{ row.catTotal.toLocaleString() }}</span>
+              </td>
+            </template>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <p v-if="activeTab === 'core'" class="footnote">
       Each record is assigned to a category based on its primary curriculum. Records without a
@@ -451,14 +454,20 @@ const visibleRows = computed(() => {
   border-bottom-color: #4a90a4;
 }
 
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
 .summary-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 1rem;
 }
 
 th {
@@ -654,5 +663,20 @@ tr:last-child td {
 
 .detail-table tr:last-child td {
   border-bottom: none;
+}
+
+@media (max-width: 640px) {
+  .col-category {
+    width: 130px;
+  }
+
+  .col-number {
+    width: 100px;
+  }
+
+  th,
+  td {
+    padding: 0.65rem 0.75rem;
+  }
 }
 </style>
