@@ -217,17 +217,39 @@ function openModal(row) {
     programName: row.programName,
     categoryName: row.categoryName,
     isIntervention: activeTab.value === "intervention",
+    isUnmatched: false,
+  };
+}
+
+function openUnmatchedModal(product) {
+  selectedProgram.value = {
+    programName: product,
+    categoryName: "Supplemental Bundle",
+    isIntervention: false,
+    isUnmatched: true,
   };
 }
 
 const modalBreakdown = computed(() => {
   if (!selectedProgram.value) return { rows: [], total: 0 };
 
-  const { programName, isIntervention } = selectedProgram.value;
+  const { programName, isIntervention, isUnmatched } = selectedProgram.value;
   const stateCounts = {};
 
   for (const school of props.schools) {
-    if (isIntervention) {
+    if (isUnmatched) {
+      let matched = false;
+      for (const entry of school.elaCurricula ?? []) {
+        if (matched) break;
+        if (entry?.foundationalSkillsReported) continue;
+        if (entry?.supplementalReported) continue;
+        const product = entry?.product?.trim();
+        if (product === programName && !getProgramForProduct(product)) {
+          stateCounts[school.state] = (stateCounts[school.state] ?? 0) + 1;
+          matched = true;
+        }
+      }
+    } else if (isIntervention) {
       const products = [
         ...(school.interventionProducts ?? []),
         ...(school.elaCurricula ?? [])
@@ -439,7 +461,7 @@ const visibleRows = computed(() => {
             </thead>
             <tbody>
               <tr v-for="[product, count] in unmatchedProducts" :key="product">
-                <td>{{ product }}</td>
+                <td class="clickable" @click="openUnmatchedModal(product)">{{ product }}</td>
                 <td class="number-cell">{{ count.toLocaleString() }}</td>
               </tr>
             </tbody>
@@ -473,7 +495,13 @@ const visibleRows = computed(() => {
         <h3 class="modal-title">{{ selectedProgram.programName }}</h3>
         <button class="modal-close" @click="selectedProgram = null">×</button>
       </div>
-      <p class="modal-subtitle">Usage across states</p>
+      <p class="modal-subtitle">
+        {{
+          selectedProgram.isUnmatched
+            ? "Supplemental Bundle — usage across states"
+            : "Usage across states"
+        }}
+      </p>
       <table class="modal-table">
         <thead>
           <tr>
@@ -775,11 +803,13 @@ tr:last-child td {
   }
 }
 
-.program-cell.clickable {
+.program-cell.clickable,
+.detail-table td.clickable {
   cursor: pointer;
 }
 
-.program-cell.clickable:hover {
+.program-cell.clickable:hover,
+.detail-table td.clickable:hover {
   text-decoration: underline;
   color: #4a90a4;
 }
