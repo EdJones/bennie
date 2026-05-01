@@ -274,6 +274,7 @@ export const curriculumCategories = [
         ],
       },
       { name: "Blast Foundations", products: ["Blast Foundations"] },
+      { name: "Foundations A-Z", products: ["Foundations A-Z"] },
       {
         name: "Savvas Essentials",
         products: [
