@@ -301,7 +301,32 @@ const modalBreakdown = computed(() => {
     .map(([state, count]) => ({ state, stateName: STATE_NAMES[state] ?? state, count }))
     .sort((a, b) => b.count - a.count);
   const total = rows.reduce((sum, r) => sum + r.count, 0);
-  return { rows, total };
+
+  const TYPE_LABELS = {
+    "ELA Core": "ELA Core",
+    "Reading Intervention": "Reading Intervention",
+    "Both ELA Core and Reading Intervention": "Core & Intervention",
+    "Foundational Skills": "Foundational Skills",
+  };
+  const typeCounts = {};
+  if (!isUnmatched) {
+    for (const school of props.schools) {
+      for (const entry of school.elaCurricula ?? []) {
+        const product = entry?.product?.trim();
+        if (!product) continue;
+        const match = getProgramForProduct(product);
+        const name = match ? match.programName : product;
+        if (name === programName) {
+          const label =
+            TYPE_LABELS[entry.reportedMaterialType] ?? entry.reportedMaterialType ?? "ELA Core";
+          typeCounts[label] = (typeCounts[label] ?? 0) + 1;
+        }
+      }
+    }
+  }
+  const typeRows = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+
+  return { rows, total, typeRows };
 });
 
 const visibleRows = computed(() => {
@@ -520,6 +545,12 @@ const visibleRows = computed(() => {
             : "Usage across states"
         }}
       </p>
+      <div v-if="modalBreakdown.typeRows.length > 1" class="modal-type-breakdown">
+        <div v-for="[label, count] in modalBreakdown.typeRows" :key="label" class="modal-type-row">
+          <span class="modal-type-label">{{ label }}</span>
+          <span class="modal-type-count">{{ count.toLocaleString() }}</span>
+        </div>
+      </div>
       <table class="modal-table">
         <thead>
           <tr>
@@ -891,9 +922,32 @@ tr:last-child td {
 }
 
 .modal-subtitle {
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   font-size: 0.85rem;
   color: #888;
+}
+
+.modal-type-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.modal-type-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f0f0f0;
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.modal-type-count {
+  font-weight: 600;
+  color: #333;
 }
 
 .modal-table {
