@@ -186,6 +186,7 @@ export const curriculumCategories = [
           "PowerUp Literacy",
           "Lexia LETRS",
           "Lexia Core5 Reading",
+          "Lexia Core 5 Reading",
           "Lexia PowerUp Literacy",
         ],
       },
