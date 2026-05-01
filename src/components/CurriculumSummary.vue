@@ -6,6 +6,7 @@ import {
   homegrownCategory,
   getProgramForProduct,
 } from "../data/curriculumCategories";
+import { STATE_NAMES } from "../data/stateNames";
 
 const props = defineProps({
   schools: { type: Array, required: true },
@@ -209,6 +210,64 @@ const activeRows = computed(() =>
   activeTab.value === "core" ? tableData.value.coreRows : tableData.value.interventionRows,
 );
 
+const selectedProgram = ref(null);
+
+function openModal(row) {
+  selectedProgram.value = {
+    programName: row.programName,
+    categoryName: row.categoryName,
+    isIntervention: activeTab.value === "intervention",
+  };
+}
+
+const modalBreakdown = computed(() => {
+  if (!selectedProgram.value) return { rows: [], total: 0 };
+
+  const { programName, isIntervention } = selectedProgram.value;
+  const stateCounts = {};
+
+  for (const school of props.schools) {
+    if (isIntervention) {
+      const products = [
+        ...(school.interventionProducts ?? []),
+        ...(school.elaCurricula ?? [])
+          .filter((e) => INTERVENTION_TYPES.has(e?.reportedMaterialType))
+          .map((e) => e?.product?.trim())
+          .filter(Boolean),
+      ];
+      for (const product of products) {
+        const match = getProgramForProduct(product);
+        const name = match ? match.programName : product;
+        if (name === programName) {
+          stateCounts[school.state] = (stateCounts[school.state] ?? 0) + 1;
+          break;
+        }
+      }
+    } else {
+      let matched = false;
+      for (const entry of school.elaCurricula ?? []) {
+        if (matched) break;
+        const product = entry?.product?.trim();
+        if (!product) continue;
+        if (entry?.reportedMaterialType === "Reading Intervention") continue;
+        if (entry?.foundationalSkillsReported) continue;
+        if (entry?.supplementalReported) continue;
+        const match = getProgramForProduct(product);
+        if (match && match.programName === programName) {
+          stateCounts[school.state] = (stateCounts[school.state] ?? 0) + 1;
+          matched = true;
+        }
+      }
+    }
+  }
+
+  const rows = Object.entries(stateCounts)
+    .map(([state, count]) => ({ state, stateName: STATE_NAMES[state] ?? state, count }))
+    .sort((a, b) => b.count - a.count);
+  const total = rows.reduce((sum, r) => sum + r.count, 0);
+  return { rows, total };
+});
+
 const visibleRows = computed(() => {
   const result = [];
   const allRows = activeRows.value;
@@ -336,7 +395,11 @@ const visibleRows = computed(() => {
                   included.
                 </p>
               </td>
-              <td class="program-cell" :class="{ muted: row.programNameMuted }">
+              <td
+                class="program-cell"
+                :class="{ muted: row.programNameMuted, clickable: !row.programNameMuted }"
+                @click="!row.programNameMuted && openModal(row)"
+              >
                 {{ row.programName }}
               </td>
               <td class="number-cell">{{ row.count > 0 ? row.count.toLocaleString() : "0" }}</td>
@@ -402,6 +465,38 @@ const visibleRows = computed(() => {
         </div>
       </div>
     </details>
+  </div>
+
+  <div v-if="selectedProgram" class="modal-backdrop" @click.self="selectedProgram = null">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">{{ selectedProgram.programName }}</h3>
+        <button class="modal-close" @click="selectedProgram = null">×</button>
+      </div>
+      <p class="modal-subtitle">Usage across states</p>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>State</th>
+            <th class="col-number">Records</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in modalBreakdown.rows" :key="row.state">
+            <td>{{ row.stateName }}</td>
+            <td class="number-cell">{{ row.count.toLocaleString() }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="modal-total-row">
+            <td><strong>Total</strong></td>
+            <td class="number-cell">
+              <strong>{{ modalBreakdown.total.toLocaleString() }}</strong>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -678,5 +773,103 @@ tr:last-child td {
   td {
     padding: 0.65rem 0.75rem;
   }
+}
+
+.program-cell.clickable {
+  cursor: pointer;
+}
+
+.program-cell.clickable:hover {
+  text-decoration: underline;
+  color: #4a90a4;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0;
+}
+
+.modal-close:hover {
+  color: #555;
+}
+
+.modal-subtitle {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.modal-table th {
+  background: #f8f9fa;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #e8e8e8;
+  text-align: left;
+}
+
+.modal-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+}
+
+.modal-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.modal-total-row td {
+  border-top: 2px solid #e8e8e8;
+  padding-top: 0.6rem;
+  color: #333;
 }
 </style>
