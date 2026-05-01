@@ -274,6 +274,14 @@ export const curriculumCategories = [
         ],
       },
       { name: "Blast Foundations", products: ["Blast Foundations"] },
+      {
+        name: "Savvas Essentials",
+        products: [
+          "Savvas Essentials: Foundational Reading",
+          "Savvas Foundational Reading",
+          "Savvas Essentials",
+        ],
+      },
       { name: "Words Their Way", products: ["Words Their Way"] },
       { name: "Fast ForWord", products: ["Fast ForWord"] },
       { name: "Reading Recovery", products: ["Reading Recovery"] },
