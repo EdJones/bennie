@@ -151,8 +151,11 @@ const tableData = computed(() => {
     });
   }
 
-  const homegrownCount = homegrownSchools.size;
   const upperElementaryCount = upperElementarySchools.size;
+  const additionalCount = [...homegrownSchools].filter(
+    (id) => !upperElementarySchools.has(id),
+  ).length;
+  const otherTotal = additionalCount + upperElementaryCount;
   const noDataCount = noDataSchools.size;
   coreRows.push({
     isFirstInCategory: true,
@@ -160,21 +163,21 @@ const tableData = computed(() => {
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
     categoryTextColor: homegrownCategory.textColor,
-    catTotal: homegrownCount,
+    catTotal: otherTotal,
     programName: "Additional",
-    count: homegrownCount,
-    shareOfAdoptions: pct(homegrownCount, total),
-    categoryShare: pct(homegrownCount, total),
+    count: additionalCount,
+    shareOfAdoptions: pct(additionalCount, total),
+    categoryShare: pct(otherTotal, total),
   });
   coreRows.push({
     isFirstInCategory: false,
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
-    catTotal: homegrownCount,
+    catTotal: otherTotal,
     programName: "Upper Elem. Classroom Curriculum",
     count: upperElementaryCount,
     shareOfAdoptions: pct(upperElementaryCount, total),
-    categoryShare: pct(homegrownCount, total),
+    categoryShare: pct(otherTotal, total),
   });
   coreRows.push({
     isFirstInCategory: true,
@@ -218,6 +221,7 @@ const unmatchedProducts = computed(() => {
   const gradeRangeSets = {};
   for (const school of props.schools) {
     for (const entry of school.elaCurricula ?? []) {
+      if (entry?.reportedMaterialType === "Reading Intervention") continue;
       if (entry?.foundationalSkillsReported) continue;
       if (entry?.supplementalReported) continue;
       const product = entry?.product?.trim();
