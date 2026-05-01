@@ -331,6 +331,7 @@ const visibleRows = computed(() => {
               class="category-share-cell"
             >
               <strong>{{ row.categoryShare }}</strong>
+              <span class="category-share-count">{{ row.catTotal.toLocaleString() }}</span>
             </td>
           </template>
         </tr>
@@ -519,6 +520,14 @@ tr:last-child td {
   font-variant-numeric: tabular-nums;
   border-left: 1px solid rgba(0, 0, 0, 0.06);
   vertical-align: middle;
+}
+
+.category-share-count {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #888;
+  margin-top: 0.1rem;
 }
 
 .toggle-cell {
