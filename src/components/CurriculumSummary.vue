@@ -159,6 +159,7 @@ const tableData = computed(() => {
 
 const unmatchedProducts = computed(() => {
   const schoolSets = {};
+  const gradeRangeSets = {};
   for (const school of props.schools) {
     for (const entry of school.elaCurricula ?? []) {
       if (entry?.foundationalSkillsReported) continue;
@@ -167,12 +168,21 @@ const unmatchedProducts = computed(() => {
       if (product && !getProgramForProduct(product)) {
         if (!schoolSets[product]) schoolSets[product] = new Set();
         schoolSets[product].add(school.id);
+        const gr = entry?.gradeRange?.trim();
+        if (gr) {
+          if (!gradeRangeSets[product]) gradeRangeSets[product] = new Set();
+          gradeRangeSets[product].add(gr);
+        }
       }
     }
   }
   return Object.entries(schoolSets)
-    .map(([product, s]) => [product, s.size])
-    .sort((a, b) => b[1] - a[1]);
+    .map(([product, s]) => ({
+      product,
+      count: s.size,
+      grades: gradeRangeSets[product] ? [...gradeRangeSets[product]].sort().join(", ") : "",
+    }))
+    .sort((a, b) => b.count - a.count);
 });
 
 const noDataByProvider = computed(() => {
@@ -459,13 +469,17 @@ const visibleRows = computed(() => {
             <thead>
               <tr>
                 <th>Product string</th>
+                <th>Grades</th>
                 <th class="col-number">Records</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="[product, count] in unmatchedProducts" :key="product">
-                <td class="clickable" @click="openUnmatchedModal(product)">{{ product }}</td>
-                <td class="number-cell">{{ count.toLocaleString() }}</td>
+              <tr v-for="row in unmatchedProducts" :key="row.product">
+                <td class="clickable" @click="openUnmatchedModal(row.product)">
+                  {{ row.product }}
+                </td>
+                <td class="grade-cell">{{ row.grades }}</td>
+                <td class="number-cell">{{ row.count.toLocaleString() }}</td>
               </tr>
             </tbody>
           </table>
@@ -789,6 +803,12 @@ tr:last-child td {
 
 .detail-table tr:last-child td {
   border-bottom: none;
+}
+
+.grade-cell {
+  color: #888;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
