@@ -24,7 +24,6 @@ async function handleLogout() {
         </a>
         <div class="header-right">
           <button class="header-btn" @click="router.push('/interventions')">Interventions</button>
-          <button class="header-btn" @click="router.push('/summary')">Summary</button>
           <template v-if="user">
             <span class="user-email">{{ user.email }}</span>
             <button class="header-btn" @click="router.push('/issues')">Issues</button>
@@ -126,6 +125,8 @@ main {
   }
 
   .header-content {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 0.5rem;
   }
 
@@ -148,8 +149,10 @@ main {
   }
 
   .header-right {
+    width: 100%;
+    flex-wrap: wrap;
     gap: 0.4rem;
-    flex-shrink: 0;
+    flex-shrink: 1;
   }
 
   .header-btn {
