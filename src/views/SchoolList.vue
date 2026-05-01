@@ -429,110 +429,112 @@ onUnmounted(() => {
           reported as "Supplemental".
         </p>
 
-        <table
-          v-if="selectedState || selectedCurriculum || selectedIntervention"
-          class="schools-table"
-        >
-          <thead>
-            <tr>
-              <th>State</th>
-              <th>District</th>
-              <th v-if="activeTab === 'core'">School</th>
-              <th v-if="activeTab === 'core'">Core Curriculum</th>
-              <th v-if="activeTab === 'core'">Foundational / Phonics</th>
-              <th v-if="activeTab === 'intervention'">Interventions</th>
-              <th v-if="isAdmin"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="school in filteredDistricts"
-              :key="school.id"
-              class="clickable-row"
-              @click="router.push(`/view/${school.id}`)"
-            >
-              <td>{{ school.state }}</td>
-              <td>{{ school.districtName }}</td>
-              <td v-if="activeTab === 'core'">
-                <span class="level-badge">District-Wide</span>
-              </td>
-              <td v-if="activeTab === 'core'" class="curriculum-cell">
-                {{ getCoreCurricula(school).join(", ") }}
-              </td>
-              <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
-                <template v-if="school.state === 'CT' && getFoundationalCurricula(school).length"
-                  >{{ getFoundationalCurricula(school).join("*, ") }}*</template
-                >
-                <template v-else>
-                  {{ getFoundationalCurricula(school).join(", ") }}
-                  <span
-                    v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
-                    class="footnote-marker"
-                    >†</span
+        <div class="table-scroll-container">
+          <table
+            v-if="selectedState || selectedCurriculum || selectedIntervention"
+            class="schools-table"
+          >
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>District</th>
+                <th v-if="activeTab === 'core'">School</th>
+                <th v-if="activeTab === 'core'">Core Curriculum</th>
+                <th v-if="activeTab === 'core'">Foundational / Phonics</th>
+                <th v-if="activeTab === 'intervention'">Interventions</th>
+                <th v-if="isAdmin"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="school in filteredDistricts"
+                :key="school.id"
+                class="clickable-row"
+                @click="router.push(`/view/${school.id}`)"
+              >
+                <td>{{ school.state }}</td>
+                <td>{{ school.districtName }}</td>
+                <td v-if="activeTab === 'core'">
+                  <span class="level-badge">District-Wide</span>
+                </td>
+                <td v-if="activeTab === 'core'" class="curriculum-cell">
+                  {{ getCoreCurricula(school).join(", ") }}
+                </td>
+                <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
+                  <template v-if="school.state === 'CT' && getFoundationalCurricula(school).length"
+                    >{{ getFoundationalCurricula(school).join("*, ") }}*</template
                   >
-                </template>
-              </td>
-              <td v-if="activeTab === 'intervention'" class="interventions-cell">
-                <span
-                  v-for="p in getSchoolInterventionProducts(school)"
-                  :key="p"
-                  class="intervention-tag"
-                  :class="{ highlight: p === selectedIntervention }"
-                  >{{ p }}</span
-                >
-              </td>
-              <td v-if="isAdmin" class="actions">
-                <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
-              </td>
-            </tr>
-
-            <tr
-              v-if="filteredDistricts.length && filteredNonDistricts.length"
-              class="section-separator"
-            >
-              <td colspan="10">Individual Schools</td>
-            </tr>
-
-            <tr
-              v-for="school in filteredNonDistricts"
-              :key="school.id"
-              class="clickable-row"
-              @click="router.push(`/view/${school.id}`)"
-            >
-              <td>{{ school.state }}</td>
-              <td>{{ school.districtName }}</td>
-              <td v-if="activeTab === 'core'">{{ school.schoolName }}</td>
-              <td v-if="activeTab === 'core'" class="curriculum-cell">
-                {{ getCoreCurricula(school).join(", ") }}
-              </td>
-              <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
-                <template v-if="school.state === 'CT' && getFoundationalCurricula(school).length"
-                  >{{ getFoundationalCurricula(school).join("*, ") }}*</template
-                >
-                <template v-else>
-                  {{ getFoundationalCurricula(school).join(", ") }}
+                  <template v-else>
+                    {{ getFoundationalCurricula(school).join(", ") }}
+                    <span
+                      v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                      class="footnote-marker"
+                      >†</span
+                    >
+                  </template>
+                </td>
+                <td v-if="activeTab === 'intervention'" class="interventions-cell">
                   <span
-                    v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
-                    class="footnote-marker"
-                    >†</span
+                    v-for="p in getSchoolInterventionProducts(school)"
+                    :key="p"
+                    class="intervention-tag"
+                    :class="{ highlight: p === selectedIntervention }"
+                    >{{ p }}</span
                   >
-                </template>
-              </td>
-              <td v-if="activeTab === 'intervention'" class="interventions-cell">
-                <span
-                  v-for="p in getSchoolInterventionProducts(school)"
-                  :key="p"
-                  class="intervention-tag"
-                  :class="{ highlight: p === selectedIntervention }"
-                  >{{ p }}</span
-                >
-              </td>
-              <td v-if="isAdmin" class="actions">
-                <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td v-if="isAdmin" class="actions">
+                  <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
+                </td>
+              </tr>
+
+              <tr
+                v-if="filteredDistricts.length && filteredNonDistricts.length"
+                class="section-separator"
+              >
+                <td colspan="10">Individual Schools</td>
+              </tr>
+
+              <tr
+                v-for="school in filteredNonDistricts"
+                :key="school.id"
+                class="clickable-row"
+                @click="router.push(`/view/${school.id}`)"
+              >
+                <td>{{ school.state }}</td>
+                <td>{{ school.districtName }}</td>
+                <td v-if="activeTab === 'core'">{{ school.schoolName }}</td>
+                <td v-if="activeTab === 'core'" class="curriculum-cell">
+                  {{ getCoreCurricula(school).join(", ") }}
+                </td>
+                <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
+                  <template v-if="school.state === 'CT' && getFoundationalCurricula(school).length"
+                    >{{ getFoundationalCurricula(school).join("*, ") }}*</template
+                  >
+                  <template v-else>
+                    {{ getFoundationalCurricula(school).join(", ") }}
+                    <span
+                      v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                      class="footnote-marker"
+                      >†</span
+                    >
+                  </template>
+                </td>
+                <td v-if="activeTab === 'intervention'" class="interventions-cell">
+                  <span
+                    v-for="p in getSchoolInterventionProducts(school)"
+                    :key="p"
+                    class="intervention-tag"
+                    :class="{ highlight: p === selectedIntervention }"
+                    >{{ p }}</span
+                  >
+                </td>
+                <td v-if="isAdmin" class="actions">
+                  <button class="btn-delete" @click.stop="deleteSchool(school.id)">Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <p v-if="selectedState === 'MA' && activeTab === 'core'" class="table-footnote">
           † Did not explicitly report a foundational skills curriculum. Some MA districts may have
@@ -906,6 +908,11 @@ h1 {
   background: white;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .schools-table {

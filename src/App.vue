@@ -125,6 +125,8 @@ main {
   }
 
   .header-content {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 0.5rem;
   }
 
@@ -147,8 +149,10 @@ main {
   }
 
   .header-right {
+    width: 100%;
+    flex-wrap: wrap;
     gap: 0.4rem;
-    flex-shrink: 0;
+    flex-shrink: 1;
   }
 
   .header-btn {
