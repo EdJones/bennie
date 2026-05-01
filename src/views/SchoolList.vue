@@ -264,18 +264,6 @@ onUnmounted(() => {
       <template v-else>
         <div class="summary-section">
           <div class="summary-card">
-            <div class="summary-value">{{ schools.length }}</div>
-            <div class="summary-label">Total Records</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-value">{{ uniqueStates.length }}</div>
-            <div class="summary-label">States</div>
-          </div>
-          <div class="summary-card">
-            <div class="summary-value">{{ totalDistricts }}</div>
-            <div class="summary-label">Districts</div>
-          </div>
-          <div class="summary-card">
             <div class="summary-value">
               {{
                 districtSchoolCount !== null
@@ -284,6 +272,14 @@ onUnmounted(() => {
               }}
             </div>
             <div class="summary-label">Schools</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value">{{ totalDistricts }}</div>
+            <div class="summary-label">Districts</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-value">{{ uniqueStates.length }}</div>
+            <div class="summary-label">States</div>
           </div>
         </div>
 
