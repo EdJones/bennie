@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import CurriculumSummary from "../components/CurriculumSummary.vue";
 const STATE_NAMES = {
   AL: "Alabama",
   AK: "Alaska",
@@ -74,6 +75,7 @@ function getCoreCurricula(school) {
     const product = entry?.product?.trim();
     if (!product) continue;
     if (entry?.reportedMaterialType === "Reading Intervention") continue;
+    if (entry?.foundationalSkillsReported || entry?.supplementalReported) continue;
     const match = getProgramForProduct(product);
     if (match && CORE_CATEGORIES.has(match.categoryName) && !seen.has(match.programName)) {
       seen.add(match.programName);
@@ -90,6 +92,14 @@ function getFoundationalCurricula(school) {
     const product = entry?.product?.trim();
     if (!product) continue;
     if (entry?.reportedMaterialType === "Reading Intervention") continue;
+    if (entry?.supplementalReported) continue;
+    if (entry?.foundationalSkillsReported) {
+      if (!seen.has(product)) {
+        seen.add(product);
+        results.push(product);
+      }
+      continue;
+    }
     const match = getProgramForProduct(product);
     if (match && match.categoryName === "Foundational / Phonics" && !seen.has(match.programName)) {
       seen.add(match.programName);
@@ -374,58 +384,61 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="tab-bar">
-          <button
-            class="tab-btn"
-            :class="{ active: activeTab === 'core' }"
-            @click="switchTab('core')"
-          >
-            Core / Foundational
-          </button>
-          <button
-            class="tab-btn"
-            :class="{ active: activeTab === 'intervention' }"
-            @click="switchTab('intervention')"
-          >
-            Intervention
-          </button>
-        </div>
-
-        <div v-if="activeTab === 'core'" class="filters-row">
-          <div class="curriculum-filter">
-            <select v-model="selectedCurriculum" class="curriculum-select">
-              <option value="">All curricula</option>
-              <option v-for="p in uniqueCurriculumProducts" :key="p" :value="p">{{ p }}</option>
-            </select>
+        <template v-if="selectedState || selectedCurriculum || selectedIntervention">
+          <div class="tab-bar">
             <button
-              v-if="selectedCurriculum"
-              class="clear-curriculum"
-              @click="selectedCurriculum = ''"
+              class="tab-btn"
+              :class="{ active: activeTab === 'core' }"
+              @click="switchTab('core')"
             >
-              ×
+              Core / Foundational
+            </button>
+            <button
+              class="tab-btn"
+              :class="{ active: activeTab === 'intervention' }"
+              @click="switchTab('intervention')"
+            >
+              Intervention
             </button>
           </div>
-        </div>
 
-        <div v-if="activeTab === 'intervention'" class="filters-row">
-          <div class="curriculum-filter">
-            <select v-model="selectedIntervention" class="curriculum-select">
-              <option value="">All intervention products</option>
-              <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
-            </select>
-            <button
-              v-if="selectedIntervention"
-              class="clear-curriculum"
-              @click="selectedIntervention = ''"
-            >
-              ×
-            </button>
+          <div v-if="activeTab === 'core'" class="filters-row">
+            <div class="curriculum-filter">
+              <select v-model="selectedCurriculum" class="curriculum-select">
+                <option value="">All curricula</option>
+                <option v-for="p in uniqueCurriculumProducts" :key="p" :value="p">{{ p }}</option>
+              </select>
+              <button
+                v-if="selectedCurriculum"
+                class="clear-curriculum"
+                @click="selectedCurriculum = ''"
+              >
+                ×
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div v-if="!selectedState && !selectedCurriculum && !selectedIntervention" class="empty">
-          Select a state to view records.
-        </div>
+          <div v-if="activeTab === 'intervention'" class="filters-row">
+            <div class="curriculum-filter">
+              <select v-model="selectedIntervention" class="curriculum-select">
+                <option value="">All intervention products</option>
+                <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
+              </select>
+              <button
+                v-if="selectedIntervention"
+                class="clear-curriculum"
+                @click="selectedIntervention = ''"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <CurriculumSummary
+          v-if="!selectedState && !selectedCurriculum && !selectedIntervention"
+          :schools="schools"
+        />
 
         <div v-else class="search-row">
           <input
@@ -439,6 +452,22 @@ onUnmounted(() => {
             {{ filteredSchools.length }} result{{ filteredSchools.length === 1 ? "" : "s" }}
           </span>
         </div>
+
+        <p
+          v-if="selectedState === 'MA' && activeTab === 'intervention'"
+          class="state-intervention-note"
+        >
+          Massachusetts DESE does not separately report reading intervention programs, so no data is
+          available for this tab.
+        </p>
+
+        <p
+          v-if="selectedState === 'MA' && activeTab === 'core'"
+          class="table-footnote table-footnote--top"
+        >
+          † Did not explicitly report a foundational skills curriculum. Some MA districts may have
+          reported as "Supplemental".
+        </p>
 
         <table
           v-if="selectedState || selectedCurriculum || selectedIntervention"
@@ -472,6 +501,11 @@ onUnmounted(() => {
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
                 {{ getFoundationalCurricula(school).join(", ") }}
+                <span
+                  v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                  class="footnote-marker"
+                  >†</span
+                >
               </td>
               <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
@@ -508,6 +542,11 @@ onUnmounted(() => {
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
                 {{ getFoundationalCurricula(school).join(", ") }}
+                <span
+                  v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                  class="footnote-marker"
+                  >†</span
+                >
               </td>
               <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
@@ -524,6 +563,11 @@ onUnmounted(() => {
             </tr>
           </tbody>
         </table>
+
+        <p v-if="selectedState === 'MA' && activeTab === 'core'" class="table-footnote">
+          † Did not explicitly report a foundational skills curriculum. Some MA districts may have
+          reported as "Supplemental".
+        </p>
       </template>
     </div>
   </div>
@@ -864,6 +908,34 @@ h1 {
 .search-count {
   font-size: 0.8rem;
   color: #aaa;
+}
+
+.footnote-marker {
+  color: #aaa;
+  font-size: 0.85em;
+  margin-left: 0.1em;
+}
+
+.table-footnote {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}
+
+.table-footnote--top {
+  margin: 0 0 0.5rem;
+}
+
+.state-intervention-note {
+  margin: 0 0 1rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  font-style: italic;
+  color: #888;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .schools-table {
