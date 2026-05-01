@@ -462,6 +462,23 @@ onUnmounted(() => {
         </p>
 
         <p
+          v-if="selectedState === 'CT' && activeTab === 'intervention'"
+          class="state-intervention-note"
+        >
+          Connecticut SDE does not separately report reading intervention programs, so no data is
+          available for this tab.
+        </p>
+
+        <p
+          v-if="selectedState === 'CT' && activeTab === 'core'"
+          class="table-footnote table-footnote--top"
+        >
+          CT districts self-report approved K–3 programs as a single combined list. The Core and
+          Foundational / Phonics columns shown here are inferred from program names — CT does not
+          report them separately.
+        </p>
+
+        <p
           v-if="selectedState === 'MA' && activeTab === 'core'"
           class="table-footnote table-footnote--top"
         >

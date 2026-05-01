@@ -108,19 +108,43 @@ function formatBoolean(value) {
 
       <div class="info-card primary">
         <h2>ELA Curriculum</h2>
+
+        <p v-if="school.state === 'CT'" class="data-note source-note">
+          CT SDE K–3 approved program list (self-reported, {{ school.schoolYear ?? "2024–25" }}).
+          Core and Foundational / Phonics groupings shown below are inferred from program names — CT
+          districts report all approved programs as a single combined list.
+        </p>
+        <p v-if="school.hasWaiver" class="data-note waiver-note">
+          This district received a CSDE waiver to use an alternative or district-created curriculum.
+        </p>
+
         <div
           v-if="
             !coreCurricula.length &&
             !foundationalCurricula.length &&
             !interventionCurricula.length &&
             !legacyInterventionProducts.length &&
-            !supplementalCurricula.length
+            !supplementalCurricula.length &&
+            !school.hasWaiver &&
+            !school.didNotReport
           "
           class="empty-state"
         >
           No curriculum data on record.
         </div>
-        <template v-else>
+        <p v-if="school.didNotReport" class="data-note">
+          {{ school.districtName || school.schoolName }} did not report curriculum data for
+          {{ school.schoolYear ?? "this school year" }}.
+        </p>
+        <template
+          v-if="
+            coreCurricula.length ||
+            foundationalCurricula.length ||
+            interventionCurricula.length ||
+            legacyInterventionProducts.length ||
+            supplementalCurricula.length
+          "
+        >
           <template v-if="coreCurricula.length">
             <h3 v-if="hasMultipleCurriculumSections" class="curriculum-section-heading">
               Core Curriculum
@@ -165,13 +189,14 @@ function formatBoolean(value) {
 
           <p
             v-if="
-              school.state === 'MA' &&
+              (school.state === 'MA' || school.state === 'CT') &&
               !interventionCurricula.length &&
               !legacyInterventionProducts.length
             "
             class="data-note"
           >
-            Massachusetts DESE does not separately report reading intervention programs.
+            {{ school.state === "MA" ? "Massachusetts DESE" : "Connecticut SDE" }}
+            does not separately report reading intervention programs.
           </p>
 
           <template v-if="interventionCurricula.length || legacyInterventionProducts.length">
@@ -631,6 +656,19 @@ function formatBoolean(value) {
   font-size: 0.8rem;
   font-style: italic;
   color: #999;
+}
+
+.source-note {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.waiver-note {
+  color: #7a6a00;
+  background: #fffbe6;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-style: normal;
 }
 
 /* Chip system */
