@@ -143,6 +143,17 @@ function formatBoolean(value) {
             </div>
           </template>
 
+          <p
+            v-if="
+              school.state === 'MA' &&
+              !interventionCurricula.length &&
+              !legacyInterventionProducts.length
+            "
+            class="data-note"
+          >
+            Massachusetts DESE does not separately report reading intervention programs.
+          </p>
+
           <template v-if="interventionCurricula.length || legacyInterventionProducts.length">
             <h3 class="curriculum-section-heading">Intervention</h3>
             <div class="curriculum-entries">
@@ -573,6 +584,13 @@ function formatBoolean(value) {
 .empty-state {
   color: #888;
   font-size: 0.9rem;
+}
+
+.data-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #999;
 }
 
 /* Chip system */

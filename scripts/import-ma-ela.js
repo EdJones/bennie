@@ -1,11 +1,18 @@
 /**
- * Fetches Massachusetts ELA K-6 Core curriculum data for public school districts
- * from the DESE Profiles portal and imports records to Firestore.
+ * Fetches Massachusetts ELA K-6 Core + Foundational Skills curriculum data for
+ * public school districts from the DESE Profiles portal and imports to Firestore.
+ *
+ * Includes both regular ELA core rows and foundational skills rows (fs === "Y").
+ * Foundational programs (e.g. Fundations, UFLI, Heggerty) land in elaCurricula
+ * and are auto-categorized as "Foundational / Phonics" by getProgramForProduct().
+ *
+ * Note: MA DESE does not label programs as "Reading Intervention", so intervention
+ * data is not available from this source.
  *
  * Run with:
  *   node --env-file=.env scripts/import-ma-ela.js [--dry-run]
  *
- * Dedup key: districtId (district code) + state "MA". Existing records are skipped.
+ * Existing records are updated (elaCurricula overwritten) to pick up foundational data.
  */
 
 import https from "https";
@@ -15,6 +22,8 @@ import {
   collection,
   getDocs,
   addDoc,
+  doc,
+  updateDoc,
   query,
   where,
   Timestamp,
@@ -170,12 +179,10 @@ function parseExcel(buffer) {
     const districtName = String(row[0] ?? "").trim();
     const districtCode = String(row[1] ?? "").trim();
     const grade = String(row[3] ?? "").trim();
-    const fs = String(row[4] ?? "").trim();
     const rawProduct = String(row[6] ?? "").trim();
     const instructionUse = String(row[7] ?? "").trim();
 
     if (!districtCode || !TARGET_GRADES.has(grade)) continue;
-    if (fs === "Y") continue; // foundational skills variant — separate row set
     if (instructionUse !== "Core") continue;
     if (!rawProduct) continue;
 
@@ -224,40 +231,42 @@ async function importData() {
   const existingSnap = await getDocs(
     query(collection(db, "schools"), where("state", "==", "MA"), where("level", "==", "district")),
   );
-  const existingCodes = new Set(existingSnap.docs.map((d) => d.data().districtId).filter(Boolean));
+  // Map districtId -> Firestore doc ID for upsert
+  const existingDocIds = new Map(
+    existingSnap.docs.map((d) => [d.data().districtId, d.id]).filter(([code]) => code),
+  );
 
   let imported = 0;
-  let skipped = 0;
+  let updated = 0;
 
   for (const [code, { districtName, gradeProductMap }] of districts) {
-    if (existingCodes.has(code)) {
-      console.log(`  skip (exists): ${districtName}`);
-      skipped++;
-      continue;
-    }
-
     const curricula = buildCurricula(gradeProductMap);
+    const existingId = existingDocIds.get(code);
 
-    await addDoc(collection(db, "schools"), {
-      state: "MA",
-      level: "district",
-      districtId: code,
-      districtName,
-      schoolId: null,
-      schoolName: null,
-      elaCurricula: curricula,
-      source: "ma-dese-curriculum-report",
-      sourceUrl: BASE_URL,
-      sourceOrganization: "Massachusetts DESE",
-      importedAt: Timestamp.now(),
-    });
-
-    console.log(`  imported: ${districtName} (${code}) — ${curricula.length} curriculum entries`);
-    imported++;
-    existingCodes.add(code);
+    if (existingId) {
+      await updateDoc(doc(db, "schools", existingId), { elaCurricula: curricula });
+      console.log(`  updated: ${districtName} (${code}) — ${curricula.length} curriculum entries`);
+      updated++;
+    } else {
+      await addDoc(collection(db, "schools"), {
+        state: "MA",
+        level: "district",
+        districtId: code,
+        districtName,
+        schoolId: null,
+        schoolName: null,
+        elaCurricula: curricula,
+        source: "ma-dese-curriculum-report",
+        sourceUrl: BASE_URL,
+        sourceOrganization: "Massachusetts DESE",
+        importedAt: Timestamp.now(),
+      });
+      console.log(`  imported: ${districtName} (${code}) — ${curricula.length} curriculum entries`);
+      imported++;
+    }
   }
 
-  console.log(`\nDone. Imported: ${imported}, Skipped: ${skipped}`);
+  console.log(`\nDone. Imported: ${imported}, Updated: ${updated}`);
   process.exit(0);
 }
 

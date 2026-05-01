@@ -444,6 +444,14 @@ onUnmounted(() => {
           </span>
         </div>
 
+        <p
+          v-if="selectedState === 'MA' && activeTab === 'intervention'"
+          class="state-intervention-note"
+        >
+          Massachusetts DESE does not separately report reading intervention programs, so no data is
+          available for this tab.
+        </p>
+
         <table
           v-if="selectedState || selectedCurriculum || selectedIntervention"
           class="schools-table"
@@ -868,6 +876,17 @@ h1 {
 .search-count {
   font-size: 0.8rem;
   color: #aaa;
+}
+
+.state-intervention-note {
+  margin: 0 0 1rem;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  font-style: italic;
+  color: #888;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .schools-table {

@@ -286,7 +286,18 @@ const visibleRows = computed(() => {
       </button>
     </div>
 
-    <table class="summary-table">
+    <p
+      v-if="activeTab === 'intervention' && stateLabel === 'Massachusetts'"
+      class="state-intervention-note"
+    >
+      Massachusetts DESE does not separately report reading intervention programs, so no data is
+      available for this tab.
+    </p>
+
+    <table
+      v-if="!(activeTab === 'intervention' && stateLabel === 'Massachusetts')"
+      class="summary-table"
+    >
       <thead>
         <tr>
           <th class="col-category">Category</th>
@@ -316,7 +327,7 @@ const visibleRows = computed(() => {
                 Not all state surveys requested foundational program names.
               </p>
               <p v-else-if="row.categoryName === 'Intervention'" class="category-note">
-                Based on states that report intervention program usage.
+                Based on states that separately report intervention program usage. MA not included.
               </p>
             </td>
             <td class="program-cell" :class="{ muted: row.programNameMuted }">
@@ -469,6 +480,17 @@ td {
 
 tr:last-child td {
   border-bottom: none;
+}
+
+.state-intervention-note {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  font-style: italic;
+  color: #888;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .category-note {
