@@ -171,7 +171,10 @@ function formatBoolean(value) {
                 :key="'found-' + i"
                 class="curriculum-entry"
               >
-                <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
+                <div class="curriculum-name">
+                  {{ entry.product || entry.provider || "—"
+                  }}<sup v-if="school.state === 'CT'" class="inferred-marker">*</sup>
+                </div>
                 <div v-if="entry.product && entry.provider" class="curriculum-byline">
                   {{ entry.provider }}
                 </div>
@@ -661,6 +664,13 @@ function formatBoolean(value) {
 .source-note {
   margin-top: 0;
   margin-bottom: 0.75rem;
+}
+
+.inferred-marker {
+  color: #aaa;
+  font-size: 0.7em;
+  margin-left: 0.05em;
+  vertical-align: super;
 }
 
 .waiver-note {

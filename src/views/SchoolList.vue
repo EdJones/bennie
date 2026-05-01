@@ -473,9 +473,8 @@ onUnmounted(() => {
           v-if="selectedState === 'CT' && activeTab === 'core'"
           class="table-footnote table-footnote--top"
         >
-          CT districts self-report approved K–3 programs as a single combined list. The Core and
-          Foundational / Phonics columns shown here are inferred from program names — CT does not
-          report them separately.
+          * CT districts self-report approved K–3 programs as a single combined list. Foundational /
+          Phonics programs are inferred from program names — CT does not report them separately.
         </p>
 
         <p
@@ -517,12 +516,17 @@ onUnmounted(() => {
                 {{ getCoreCurricula(school).join(", ") }}
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
-                {{ getFoundationalCurricula(school).join(", ") }}
-                <span
-                  v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
-                  class="footnote-marker"
-                  >†</span
+                <template v-if="school.state === 'CT' && getFoundationalCurricula(school).length"
+                  >{{ getFoundationalCurricula(school).join("*, ") }}*</template
                 >
+                <template v-else>
+                  {{ getFoundationalCurricula(school).join(", ") }}
+                  <span
+                    v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                    class="footnote-marker"
+                    >†</span
+                  >
+                </template>
               </td>
               <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
@@ -558,12 +562,17 @@ onUnmounted(() => {
                 {{ getCoreCurricula(school).join(", ") }}
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
-                {{ getFoundationalCurricula(school).join(", ") }}
-                <span
-                  v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
-                  class="footnote-marker"
-                  >†</span
+                <template v-if="school.state === 'CT' && getFoundationalCurricula(school).length"
+                  >{{ getFoundationalCurricula(school).join("*, ") }}*</template
                 >
+                <template v-else>
+                  {{ getFoundationalCurricula(school).join(", ") }}
+                  <span
+                    v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                    class="footnote-marker"
+                    >†</span
+                  >
+                </template>
               </td>
               <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
