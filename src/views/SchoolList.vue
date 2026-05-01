@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import CurriculumSummary from "../components/CurriculumSummary.vue";
 const STATE_NAMES = {
   AL: "Alabama",
   AK: "Alaska",
@@ -374,58 +375,61 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="tab-bar">
-          <button
-            class="tab-btn"
-            :class="{ active: activeTab === 'core' }"
-            @click="switchTab('core')"
-          >
-            Core / Foundational
-          </button>
-          <button
-            class="tab-btn"
-            :class="{ active: activeTab === 'intervention' }"
-            @click="switchTab('intervention')"
-          >
-            Intervention
-          </button>
-        </div>
-
-        <div v-if="activeTab === 'core'" class="filters-row">
-          <div class="curriculum-filter">
-            <select v-model="selectedCurriculum" class="curriculum-select">
-              <option value="">All curricula</option>
-              <option v-for="p in uniqueCurriculumProducts" :key="p" :value="p">{{ p }}</option>
-            </select>
+        <template v-if="selectedState || selectedCurriculum || selectedIntervention">
+          <div class="tab-bar">
             <button
-              v-if="selectedCurriculum"
-              class="clear-curriculum"
-              @click="selectedCurriculum = ''"
+              class="tab-btn"
+              :class="{ active: activeTab === 'core' }"
+              @click="switchTab('core')"
             >
-              ×
+              Core / Foundational
+            </button>
+            <button
+              class="tab-btn"
+              :class="{ active: activeTab === 'intervention' }"
+              @click="switchTab('intervention')"
+            >
+              Intervention
             </button>
           </div>
-        </div>
 
-        <div v-if="activeTab === 'intervention'" class="filters-row">
-          <div class="curriculum-filter">
-            <select v-model="selectedIntervention" class="curriculum-select">
-              <option value="">All intervention products</option>
-              <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
-            </select>
-            <button
-              v-if="selectedIntervention"
-              class="clear-curriculum"
-              @click="selectedIntervention = ''"
-            >
-              ×
-            </button>
+          <div v-if="activeTab === 'core'" class="filters-row">
+            <div class="curriculum-filter">
+              <select v-model="selectedCurriculum" class="curriculum-select">
+                <option value="">All curricula</option>
+                <option v-for="p in uniqueCurriculumProducts" :key="p" :value="p">{{ p }}</option>
+              </select>
+              <button
+                v-if="selectedCurriculum"
+                class="clear-curriculum"
+                @click="selectedCurriculum = ''"
+              >
+                ×
+              </button>
+            </div>
           </div>
-        </div>
 
-        <div v-if="!selectedState && !selectedCurriculum && !selectedIntervention" class="empty">
-          Select a state to view records.
-        </div>
+          <div v-if="activeTab === 'intervention'" class="filters-row">
+            <div class="curriculum-filter">
+              <select v-model="selectedIntervention" class="curriculum-select">
+                <option value="">All intervention products</option>
+                <option v-for="p in usedInterventionProducts" :key="p" :value="p">{{ p }}</option>
+              </select>
+              <button
+                v-if="selectedIntervention"
+                class="clear-curriculum"
+                @click="selectedIntervention = ''"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <CurriculumSummary
+          v-if="!selectedState && !selectedCurriculum && !selectedIntervention"
+          :schools="schools"
+        />
 
         <div v-else class="search-row">
           <input
