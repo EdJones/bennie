@@ -228,6 +228,14 @@ const unmatchedProducts = computed(() => {
     .sort((a, b) => b.count - a.count);
 });
 
+const supplementalGrouped = computed(() => {
+  const rows = unmatchedProducts.value.filter((r) => !r.upperElementary);
+  return [
+    { heading: "Not Named", rows: rows.slice(0, 6) },
+    { heading: "Not Classified", rows: rows.slice(6) },
+  ].filter((g) => g.rows.length > 0);
+});
+
 const upperElementaryGrouped = computed(() => {
   const rows = unmatchedProducts.value.filter((r) => r.upperElementary);
   const groups = UPPER_ELEMENTARY_GROUPS.map((g) => ({ heading: g.heading, rows: [] }));
@@ -545,8 +553,8 @@ const visibleRows = computed(() => {
       <summary>What's in the Homegrown category?</summary>
 
       <div class="detail-sections">
-        <div v-if="unmatchedProducts.some((r) => !r.upperElementary)" class="detail-section">
-          <h3>Supplemental Bundle — unmatched product strings</h3>
+        <div v-if="supplementalGrouped.length > 0" class="detail-section">
+          <h3>Supplemental Bundles and unmatched product strings</h3>
           <table class="detail-table">
             <thead>
               <tr>
@@ -556,22 +564,24 @@ const visibleRows = computed(() => {
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="row in unmatchedProducts.filter((r) => !r.upperElementary)"
-                :key="row.product"
-              >
-                <td class="clickable" @click="openUnmatchedModal(row.product)">
-                  {{ row.product }}
-                </td>
-                <td class="grade-cell">{{ row.grades }}</td>
-                <td class="number-cell">{{ row.count.toLocaleString() }}</td>
-              </tr>
+              <template v-for="group in supplementalGrouped" :key="group.heading">
+                <tr v-if="group.heading" class="ue-group-heading">
+                  <td colspan="3">{{ group.heading }}</td>
+                </tr>
+                <tr v-for="row in group.rows" :key="row.product">
+                  <td class="clickable" @click="openUnmatchedModal(row.product)">
+                    {{ row.product }}
+                  </td>
+                  <td class="grade-cell">{{ row.grades }}</td>
+                  <td class="number-cell">{{ row.count.toLocaleString() }}</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
 
         <div v-if="upperElementaryGrouped.length > 0" class="detail-section">
-          <h3>Upper Elementary — unmatched product strings</h3>
+          <h3>Upper Elementary</h3>
           <table class="detail-table">
             <thead>
               <tr>
