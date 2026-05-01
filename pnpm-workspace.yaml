@@ -1,14 +1,17 @@
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vite-plus: ^0.1.20
+  vitest: npm:@voidzero-dev/vite-plus-test@latest
+
 onlyBuiltDependencies:
   - "@firebase/util"
   - esbuild
   - protobufjs
-catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
-  vite-plus: latest
+
 overrides:
   vite: "catalog:"
   vitest: "catalog:"
+
 peerDependencyRules:
   allowAny:
     - vite

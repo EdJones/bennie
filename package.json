@@ -10,14 +10,14 @@
     "prepare": "vp config"
   },
   "dependencies": {
-    "firebase": "^12.8.0",
-    "vue": "^3.5.24",
+    "firebase": "^12.12.1",
+    "vue": "^3.5.33",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
-    "@vitejs/plugin-vue": "^6.0.1",
-    "vite": "catalog:",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.20",
     "vite-plus": "catalog:",
     "xlsx": "^0.18.5"
   },
