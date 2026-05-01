@@ -23,6 +23,36 @@ const INTERVENTION_TYPES = new Set([
   "Both ELA Core and Reading Intervention",
 ]);
 
+const UPPER_ELEMENTARY_GROUPS = [
+  {
+    heading: "Courseware / Platform",
+    test: (p) => /edgenuity|navlit|navigator literature|commonlit|ixl|panorama/i.test(p),
+  },
+  {
+    heading: "Classroom Curriculum",
+    test: (p) =>
+      /amplify ela|into literature|studysync|perspectives|^collections$|springboard|mirrors.{0,5}windows|holt mcdougal/i.test(
+        p,
+      ),
+  },
+  {
+    heading: "Core-aligned / Modular",
+    test: (p) => /odell|engage.?ny/i.test(p),
+  },
+  {
+    heading: "Supplemental / Partial Instructional",
+    test: (p) => /collins|wordly wise|teacher created/i.test(p),
+  },
+  {
+    heading: "Locally Developed / Mixed",
+    test: (p) => /uncommon schools|district|multiple/i.test(p),
+  },
+  {
+    heading: "Other Instructional",
+    test: (p) => /stargirl|\bnone\b/i.test(p),
+  },
+];
+
 const tableData = computed(() => {
   const schoolList = props.schools;
   const total = schoolList.length;
@@ -196,6 +226,20 @@ const unmatchedProducts = computed(() => {
       };
     })
     .sort((a, b) => b.count - a.count);
+});
+
+const upperElementaryGrouped = computed(() => {
+  const rows = unmatchedProducts.value.filter((r) => r.upperElementary);
+  const groups = UPPER_ELEMENTARY_GROUPS.map((g) => ({ heading: g.heading, rows: [] }));
+  const unclassified = [];
+  for (const row of rows) {
+    const idx = UPPER_ELEMENTARY_GROUPS.findIndex((g) => g.test(row.product));
+    if (idx >= 0) groups[idx].rows.push(row);
+    else unclassified.push(row);
+  }
+  const result = groups.filter((g) => g.rows.length > 0);
+  if (unclassified.length > 0) result.push({ heading: null, rows: unclassified });
+  return result;
 });
 
 const noDataByProvider = computed(() => {
@@ -526,7 +570,7 @@ const visibleRows = computed(() => {
           </table>
         </div>
 
-        <div v-if="unmatchedProducts.some((r) => r.upperElementary)" class="detail-section">
+        <div v-if="upperElementaryGrouped.length > 0" class="detail-section">
           <h3>Upper Elementary — unmatched product strings</h3>
           <table class="detail-table">
             <thead>
@@ -537,16 +581,18 @@ const visibleRows = computed(() => {
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="row in unmatchedProducts.filter((r) => r.upperElementary)"
-                :key="row.product"
-              >
-                <td class="clickable" @click="openUnmatchedModal(row.product)">
-                  {{ row.product }}
-                </td>
-                <td class="grade-cell">{{ row.grades }}</td>
-                <td class="number-cell">{{ row.count.toLocaleString() }}</td>
-              </tr>
+              <template v-for="group in upperElementaryGrouped" :key="group.heading ?? '__other'">
+                <tr v-if="group.heading" class="ue-group-heading">
+                  <td colspan="3">{{ group.heading }}</td>
+                </tr>
+                <tr v-for="row in group.rows" :key="row.product">
+                  <td class="clickable" @click="openUnmatchedModal(row.product)">
+                    {{ row.product }}
+                  </td>
+                  <td class="grade-cell">{{ row.grades }}</td>
+                  <td class="number-cell">{{ row.count.toLocaleString() }}</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -878,6 +924,27 @@ tr:last-child td {
   td {
     padding: 0.65rem 0.75rem;
   }
+}
+
+.ue-group-heading td {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #777;
+  background: #f5f5f5;
+  padding: 0.45rem 0.6rem 0.3rem;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: none;
+}
+
+.ue-group-heading:not(:first-child) td {
+  margin-top: 1rem;
+  border-top: 8px solid white;
+}
+
+.ue-group-heading:first-child td {
+  border-top: none;
 }
 
 .program-cell.clickable,
