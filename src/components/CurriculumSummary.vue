@@ -4,8 +4,10 @@ import {
   curriculumCategories,
   interventionCategory,
   homegrownCategory,
+  noDataCategory,
   getProgramForProduct,
 } from "../data/curriculumCategories";
+import { STATE_NAMES } from "../data/stateNames";
 
 const props = defineProps({
   schools: { type: Array, required: true },
@@ -22,6 +24,44 @@ const INTERVENTION_TYPES = new Set([
   "Both ELA Core and Reading Intervention",
 ]);
 
+const UPPER_ELEMENTARY_GROUPS = [
+  {
+    heading: "Courseware / Platform",
+    test: (p) => /edgenuity|navlit|navigator literature|commonlit|ixl|panorama/i.test(p),
+  },
+  {
+    heading: "Classroom Curriculum",
+    test: (p) =>
+      /amplify ela|into literature|studysync|perspectives|^collections$|springboard|mirrors.{0,5}windows|holt mcdougal/i.test(
+        p,
+      ),
+  },
+  {
+    heading: "Core-aligned / Modular",
+    test: (p) => /odell|engage.?ny/i.test(p),
+  },
+  {
+    heading: "Supplemental / Partial Instructional",
+    test: (p) => /collins|wordly wise|teacher created/i.test(p),
+  },
+  {
+    heading: "Locally Developed / Mixed",
+    test: (p) => /uncommon schools|district|multiple/i.test(p),
+  },
+  {
+    heading: "Other Instructional",
+    test: (p) => /stargirl|\bnone\b/i.test(p),
+  },
+];
+
+function isUpperElementaryGrade(g) {
+  const n = g
+    .trim()
+    .toLowerCase()
+    .replace(/^grades?\s*/, "");
+  return n === "6" || n === "5-6";
+}
+
 const tableData = computed(() => {
   const schoolList = props.schools;
   const total = schoolList.length;
@@ -29,6 +69,7 @@ const tableData = computed(() => {
   const programSchools = {};
   const interventionProgramSchools = {};
   const homegrownSchools = new Set();
+  const upperElementarySchools = new Set();
   const noDataSchools = new Set();
 
   for (const school of schoolList) {
@@ -52,6 +93,10 @@ const tableData = computed(() => {
           programSchools[key].add(school.id);
         } else {
           hasUnmatched = true;
+          const gr = entry?.gradeRange?.trim();
+          if (gr && isUpperElementaryGrade(gr)) {
+            upperElementarySchools.add(school.id);
+          }
         }
       }
 
@@ -106,31 +151,46 @@ const tableData = computed(() => {
     });
   }
 
-  const homegrownCount = homegrownSchools.size;
+  const upperElementaryCount = upperElementarySchools.size;
+  const additionalCount = [...homegrownSchools].filter(
+    (id) => !upperElementarySchools.has(id),
+  ).length;
+  const otherTotal = additionalCount + upperElementaryCount;
   const noDataCount = noDataSchools.size;
-  const homegrownTotal = homegrownCount + noDataCount;
   coreRows.push({
     isFirstInCategory: true,
     categoryRowspan: 2,
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
     categoryTextColor: homegrownCategory.textColor,
-    catTotal: homegrownTotal,
-    programName: "Supplemental Bundle",
-    count: homegrownCount,
-    shareOfAdoptions: pct(homegrownCount, total),
-    categoryShare: pct(homegrownTotal, total),
+    catTotal: otherTotal,
+    programName: "Additional",
+    count: additionalCount,
+    shareOfAdoptions: pct(additionalCount, total),
+    categoryShare: pct(otherTotal, total),
   });
   coreRows.push({
     isFirstInCategory: false,
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
-    catTotal: homegrownTotal,
+    catTotal: otherTotal,
+    programName: "Upper Elem. Classroom Curriculum",
+    count: upperElementaryCount,
+    shareOfAdoptions: pct(upperElementaryCount, total),
+    categoryShare: pct(otherTotal, total),
+  });
+  coreRows.push({
+    isFirstInCategory: true,
+    categoryRowspan: 1,
+    categoryName: noDataCategory.name,
+    categoryColor: noDataCategory.color,
+    categoryTextColor: noDataCategory.textColor,
+    catTotal: noDataCount,
     programName: "No curriculum recorded",
     programNameMuted: true,
     count: noDataCount,
     shareOfAdoptions: pct(noDataCount, total),
-    categoryShare: pct(homegrownTotal, total),
+    categoryShare: pct(noDataCount, total),
   });
 
   const interventionEntries = Object.entries(interventionProgramSchools)
@@ -157,18 +217,60 @@ const tableData = computed(() => {
 });
 
 const unmatchedProducts = computed(() => {
-  const counts = {};
+  const schoolSets = {};
+  const gradeRangeSets = {};
   for (const school of props.schools) {
     for (const entry of school.elaCurricula ?? []) {
+      if (entry?.reportedMaterialType === "Reading Intervention") continue;
       if (entry?.foundationalSkillsReported) continue;
       if (entry?.supplementalReported) continue;
       const product = entry?.product?.trim();
       if (product && !getProgramForProduct(product)) {
-        counts[product] = (counts[product] ?? 0) + 1;
+        if (!schoolSets[product]) schoolSets[product] = new Set();
+        schoolSets[product].add(school.id);
+        const gr = entry?.gradeRange?.trim();
+        if (gr) {
+          if (!gradeRangeSets[product]) gradeRangeSets[product] = new Set();
+          gradeRangeSets[product].add(gr);
+        }
       }
     }
   }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return Object.entries(schoolSets)
+    .map(([product, s]) => {
+      const gradeSet = gradeRangeSets[product];
+      const upperElementary =
+        gradeSet?.size > 0 && [...gradeSet].every((g) => isUpperElementaryGrade(g));
+      return {
+        product,
+        count: s.size,
+        grades: gradeSet?.size <= 4 ? [...gradeSet].sort().join(", ") : "",
+        upperElementary,
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+});
+
+const supplementalGrouped = computed(() => {
+  const rows = unmatchedProducts.value.filter((r) => !r.upperElementary);
+  return [
+    { heading: "Not Named", rows: rows.slice(0, 6) },
+    { heading: "Not Classified", rows: rows.slice(6) },
+  ].filter((g) => g.rows.length > 0);
+});
+
+const upperElementaryGrouped = computed(() => {
+  const rows = unmatchedProducts.value.filter((r) => r.upperElementary);
+  const groups = UPPER_ELEMENTARY_GROUPS.map((g) => ({ heading: g.heading, rows: [] }));
+  const unclassified = [];
+  for (const row of rows) {
+    const idx = UPPER_ELEMENTARY_GROUPS.findIndex((g) => g.test(row.product));
+    if (idx >= 0) groups[idx].rows.push(row);
+    else unclassified.push(row);
+  }
+  const result = groups.filter((g) => g.rows.length > 0);
+  if (unclassified.length > 0) result.push({ heading: null, rows: unclassified });
+  return result;
 });
 
 const noDataByProvider = computed(() => {
@@ -208,6 +310,111 @@ function toggleCategory(name) {
 const activeRows = computed(() =>
   activeTab.value === "core" ? tableData.value.coreRows : tableData.value.interventionRows,
 );
+
+const selectedProgram = ref(null);
+
+function openModal(row) {
+  selectedProgram.value = {
+    programName: row.programName,
+    categoryName: row.categoryName,
+    isIntervention: activeTab.value === "intervention",
+    isUnmatched: false,
+  };
+}
+
+function openUnmatchedModal(product) {
+  selectedProgram.value = {
+    programName: product,
+    categoryName: "Supplemental Bundle",
+    isIntervention: false,
+    isUnmatched: true,
+  };
+}
+
+const modalBreakdown = computed(() => {
+  if (!selectedProgram.value) return { rows: [], total: 0 };
+
+  const { programName, isIntervention, isUnmatched } = selectedProgram.value;
+  const stateCounts = {};
+
+  for (const school of props.schools) {
+    if (isUnmatched) {
+      let matched = false;
+      for (const entry of school.elaCurricula ?? []) {
+        if (matched) break;
+        if (entry?.foundationalSkillsReported) continue;
+        if (entry?.supplementalReported) continue;
+        const product = entry?.product?.trim();
+        if (product === programName && !getProgramForProduct(product)) {
+          stateCounts[school.state] = (stateCounts[school.state] ?? 0) + 1;
+          matched = true;
+        }
+      }
+    } else if (isIntervention) {
+      const products = [
+        ...(school.interventionProducts ?? []),
+        ...(school.elaCurricula ?? [])
+          .filter((e) => INTERVENTION_TYPES.has(e?.reportedMaterialType))
+          .map((e) => e?.product?.trim())
+          .filter(Boolean),
+      ];
+      for (const product of products) {
+        const match = getProgramForProduct(product);
+        const name = match ? match.programName : product;
+        if (name === programName) {
+          stateCounts[school.state] = (stateCounts[school.state] ?? 0) + 1;
+          break;
+        }
+      }
+    } else {
+      let matched = false;
+      for (const entry of school.elaCurricula ?? []) {
+        if (matched) break;
+        const product = entry?.product?.trim();
+        if (!product) continue;
+        if (entry?.reportedMaterialType === "Reading Intervention") continue;
+        if (entry?.foundationalSkillsReported) continue;
+        if (entry?.supplementalReported) continue;
+        const match = getProgramForProduct(product);
+        if (match && match.programName === programName) {
+          stateCounts[school.state] = (stateCounts[school.state] ?? 0) + 1;
+          matched = true;
+        }
+      }
+    }
+  }
+
+  const rows = Object.entries(stateCounts)
+    .map(([state, count]) => ({ state, stateName: STATE_NAMES[state] ?? state, count }))
+    .sort((a, b) => b.count - a.count);
+  const total = rows.reduce((sum, r) => sum + r.count, 0);
+
+  const TYPE_LABELS = {
+    "ELA Core": "ELA Core",
+    "Reading Intervention": "Reading Intervention",
+    "Both ELA Core and Reading Intervention": "Core & Intervention",
+    "Foundational Skills": "Foundational Skills",
+  };
+  const typeCounts = {};
+  if (!isUnmatched) {
+    for (const school of props.schools) {
+      for (const entry of school.elaCurricula ?? []) {
+        const product = entry?.product?.trim();
+        if (!product) continue;
+        const match = getProgramForProduct(product);
+        const name = match ? match.programName : product;
+        if (name === programName) {
+          const label =
+            TYPE_LABELS[entry.reportedMaterialType] ?? entry.reportedMaterialType ?? "ELA Core";
+          typeCounts[label] = (typeCounts[label] ?? 0) + 1;
+        }
+      }
+    }
+  }
+  const typeRows = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]);
+
+  return { rows, total, typeRows };
+});
 
 const visibleRows = computed(() => {
   const result = [];
@@ -336,7 +543,11 @@ const visibleRows = computed(() => {
                   included.
                 </p>
               </td>
-              <td class="program-cell" :class="{ muted: row.programNameMuted }">
+              <td
+                class="program-cell"
+                :class="{ muted: row.programNameMuted, clickable: !row.programNameMuted }"
+                @click="!row.programNameMuted && openModal(row)"
+              >
                 {{ row.programName }}
               </td>
               <td class="number-cell">{{ row.count > 0 ? row.count.toLocaleString() : "0" }}</td>
@@ -362,46 +573,108 @@ const visibleRows = computed(() => {
     </p>
 
     <details v-if="activeTab === 'core' && hasHomegrownDetail" class="homegrown-detail">
-      <summary>What's in the Homegrown category?</summary>
+      <summary>What's in the 'Other' category?</summary>
 
       <div class="detail-sections">
-        <div v-if="unmatchedProducts.length > 0" class="detail-section">
-          <h3>Supplemental Bundle — unmatched product strings</h3>
+        <div v-if="supplementalGrouped.length > 0" class="detail-section">
+          <h3>Supplemental Bundles and unmatched product strings</h3>
           <table class="detail-table">
             <thead>
               <tr>
                 <th>Product string</th>
+                <th>Grades</th>
                 <th class="col-number">Records</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="[product, count] in unmatchedProducts" :key="product">
-                <td>{{ product }}</td>
-                <td class="number-cell">{{ count.toLocaleString() }}</td>
-              </tr>
+              <template v-for="group in supplementalGrouped" :key="group.heading">
+                <tr v-if="group.heading" class="ue-group-heading">
+                  <td colspan="3">{{ group.heading }}</td>
+                </tr>
+                <tr v-for="row in group.rows" :key="row.product">
+                  <td class="clickable" @click="openUnmatchedModal(row.product)">
+                    {{ row.product }}
+                  </td>
+                  <td class="grade-cell">{{ row.grades }}</td>
+                  <td class="number-cell">{{ row.count.toLocaleString() }}</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
 
-        <div v-if="noDataByProvider.length > 0" class="detail-section">
-          <h3>No curriculum recorded — breakdown by provider</h3>
+        <div v-if="upperElementaryGrouped.length > 0" class="detail-section">
+          <h3>Upper Elementary</h3>
           <table class="detail-table">
             <thead>
               <tr>
-                <th>Provider</th>
+                <th>Product string</th>
+                <th>Grades</th>
                 <th class="col-number">Records</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="[provider, count] in noDataByProvider" :key="provider">
-                <td :class="{ muted: provider === '(no provider)' }">{{ provider }}</td>
-                <td class="number-cell">{{ count.toLocaleString() }}</td>
-              </tr>
+              <template v-for="group in upperElementaryGrouped" :key="group.heading ?? '__other'">
+                <tr v-if="group.heading" class="ue-group-heading">
+                  <td colspan="3">{{ group.heading }}</td>
+                </tr>
+                <tr v-for="row in group.rows" :key="row.product">
+                  <td class="clickable" @click="openUnmatchedModal(row.product)">
+                    {{ row.product }}
+                  </td>
+                  <td class="grade-cell">{{ row.grades }}</td>
+                  <td class="number-cell">{{ row.count.toLocaleString() }}</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
       </div>
     </details>
+  </div>
+
+  <div v-if="selectedProgram" class="modal-backdrop" @click.self="selectedProgram = null">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">{{ selectedProgram.programName }}</h3>
+        <button class="modal-close" @click="selectedProgram = null">×</button>
+      </div>
+      <p class="modal-subtitle">
+        {{
+          selectedProgram.isUnmatched
+            ? "Supplemental Bundle — usage across states"
+            : "Usage across states"
+        }}
+      </p>
+      <div v-if="modalBreakdown.typeRows.length > 1" class="modal-type-breakdown">
+        <div v-for="[label, count] in modalBreakdown.typeRows" :key="label" class="modal-type-row">
+          <span class="modal-type-label">{{ label }}</span>
+          <span class="modal-type-count">{{ count.toLocaleString() }}</span>
+        </div>
+      </div>
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>State</th>
+            <th class="col-number">Records</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in modalBreakdown.rows" :key="row.state">
+            <td>{{ row.stateName }}</td>
+            <td class="number-cell">{{ row.count.toLocaleString() }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="modal-total-row">
+            <td><strong>Total</strong></td>
+            <td class="number-cell">
+              <strong>{{ modalBreakdown.total.toLocaleString() }}</strong>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -665,6 +938,12 @@ tr:last-child td {
   border-bottom: none;
 }
 
+.grade-cell {
+  color: #888;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
 @media (max-width: 640px) {
   .col-category {
     width: 130px;
@@ -678,5 +957,149 @@ tr:last-child td {
   td {
     padding: 0.65rem 0.75rem;
   }
+}
+
+.ue-group-heading td {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #777;
+  background: #f5f5f5;
+  padding: 0.45rem 0.6rem 0.3rem;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: none;
+}
+
+.ue-group-heading:not(:first-child) td {
+  margin-top: 1rem;
+  border-top: 8px solid white;
+}
+
+.ue-group-heading:first-child td {
+  border-top: none;
+}
+
+.program-cell.clickable,
+.detail-table td.clickable {
+  cursor: pointer;
+}
+
+.program-cell.clickable:hover,
+.detail-table td.clickable:hover {
+  text-decoration: underline;
+  color: #4a90a4;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-close {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0;
+}
+
+.modal-close:hover {
+  color: #555;
+}
+
+.modal-subtitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.modal-type-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.modal-type-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #f0f0f0;
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.modal-type-count {
+  font-weight: 600;
+  color: #333;
+}
+
+.modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.modal-table th {
+  background: #f8f9fa;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: #555;
+  border-bottom: 2px solid #e8e8e8;
+  text-align: left;
+}
+
+.modal-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+}
+
+.modal-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.modal-total-row td {
+  border-top: 2px solid #e8e8e8;
+  padding-top: 0.6rem;
+  color: #333;
 }
 </style>

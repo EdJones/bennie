@@ -186,6 +186,7 @@ export const curriculumCategories = [
           "PowerUp Literacy",
           "Lexia LETRS",
           "Lexia Core5 Reading",
+          "Lexia Core 5 Reading",
           "Lexia PowerUp Literacy",
         ],
       },
@@ -273,6 +274,16 @@ export const curriculumCategories = [
           "Ready Reading",
         ],
       },
+      { name: "Blast Foundations", products: ["Blast Foundations"] },
+      { name: "Foundations A-Z", products: ["Foundations A-Z"] },
+      {
+        name: "Savvas Essentials",
+        products: [
+          "Savvas Essentials: Foundational Reading",
+          "Savvas Foundational Reading",
+          "Savvas Essentials",
+        ],
+      },
       { name: "Words Their Way", products: ["Words Their Way"] },
       { name: "Fast ForWord", products: ["Fast ForWord"] },
       { name: "Reading Recovery", products: ["Reading Recovery"] },
@@ -287,9 +298,15 @@ export const interventionCategory = {
 };
 
 export const homegrownCategory = {
-  name: "Homegrown",
+  name: "Other",
   color: "#fdecea",
   textColor: "#8b2020",
+};
+
+export const noDataCategory = {
+  name: "No Curriculum Recorded",
+  color: "#f0f0f0",
+  textColor: "#555",
 };
 
 function normalize(str) {
