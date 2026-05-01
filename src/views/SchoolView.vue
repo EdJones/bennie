@@ -36,6 +36,7 @@ const INTERVENTION_MATERIAL_TYPES = new Set([
 const coreCurricula = computed(() =>
   (school.value?.elaCurricula ?? []).filter((e) => {
     if (e?.reportedMaterialType === "Reading Intervention") return false;
+    if (e?.foundationalSkillsReported) return false;
     return (
       getProgramForProduct(e?.product?.trim() ?? "")?.categoryName !== "Foundational / Phonics"
     );
@@ -46,7 +47,8 @@ const foundationalCurricula = computed(() =>
   (school.value?.elaCurricula ?? []).filter(
     (e) =>
       e?.reportedMaterialType !== "Reading Intervention" &&
-      getProgramForProduct(e?.product?.trim() ?? "")?.categoryName === "Foundational / Phonics",
+      (e?.foundationalSkillsReported ||
+        getProgramForProduct(e?.product?.trim() ?? "")?.categoryName === "Foundational / Phonics"),
   ),
 );
 

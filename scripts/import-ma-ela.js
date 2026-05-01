@@ -172,13 +172,15 @@ function parseExcel(buffer) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 
   // Row 0 is the title, row 1 is headers, data starts at row 2
-  const districts = new Map(); // districtCode -> { districtName, gradeProductMap }
+  // gradeProductMap = regular ELA core rows; foundationalProductMap = fs=Y rows
+  const districts = new Map();
 
   for (let i = 2; i < rows.length; i++) {
     const row = rows[i];
     const districtName = String(row[0] ?? "").trim();
     const districtCode = String(row[1] ?? "").trim();
     const grade = String(row[3] ?? "").trim();
+    const isFoundational = String(row[4] ?? "").trim() === "Y";
     const rawProduct = String(row[6] ?? "").trim();
     const instructionUse = String(row[7] ?? "").trim();
 
@@ -187,17 +189,22 @@ function parseExcel(buffer) {
     if (!rawProduct) continue;
 
     if (!districts.has(districtCode)) {
-      districts.set(districtCode, { districtName, gradeProductMap: new Map() });
+      districts.set(districtCode, {
+        districtName,
+        gradeProductMap: new Map(),
+        foundationalProductMap: new Map(),
+      });
     }
     const entry = districts.get(districtCode);
-    if (!entry.gradeProductMap.has(grade)) entry.gradeProductMap.set(grade, new Set());
+    const map = isFoundational ? entry.foundationalProductMap : entry.gradeProductMap;
+    if (!map.has(grade)) map.set(grade, new Set());
 
     // Some cells contain multiple products separated by newlines
     for (const p of rawProduct
       .split(/\n+/)
       .map((s) => s.trim())
       .filter(Boolean)) {
-      entry.gradeProductMap.get(grade).add(p);
+      map.get(grade).add(p);
     }
   }
 
@@ -239,8 +246,14 @@ async function importData() {
   let imported = 0;
   let updated = 0;
 
-  for (const [code, { districtName, gradeProductMap }] of districts) {
-    const curricula = buildCurricula(gradeProductMap);
+  for (const [code, { districtName, gradeProductMap, foundationalProductMap }] of districts) {
+    const curricula = [
+      ...buildCurricula(gradeProductMap),
+      ...buildCurricula(foundationalProductMap).map((c) => ({
+        ...c,
+        foundationalSkillsReported: true,
+      })),
+    ];
     const existingId = existingDocIds.get(code);
 
     if (existingId) {

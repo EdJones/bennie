@@ -43,6 +43,7 @@ const tableData = computed(() => {
         const product = entry?.product?.trim();
         if (!product) continue;
         if (entry?.reportedMaterialType === "Reading Intervention") continue;
+        if (entry?.foundationalSkillsReported) continue;
         const match = getProgramForProduct(product);
         if (match) {
           const key = `${match.categoryName}||${match.programName}`;
@@ -158,6 +159,7 @@ const unmatchedProducts = computed(() => {
   const counts = {};
   for (const school of props.schools) {
     for (const entry of school.elaCurricula ?? []) {
+      if (entry?.foundationalSkillsReported) continue;
       const product = entry?.product?.trim();
       if (product && !getProgramForProduct(product)) {
         counts[product] = (counts[product] ?? 0) + 1;
