@@ -33,6 +33,7 @@ import * as XLSX from "xlsx";
 const TARGET_GRADES = new Set(["K", "01", "02", "03", "04", "05", "06"]);
 const GRADE_ORDER = ["K", "01", "02", "03", "04", "05", "06"];
 const BASE_URL = "https://profiles.doe.mass.edu/statereport/Curriculumdata.aspx";
+const SCHOOL_YEAR = "2024–25";
 
 const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
@@ -185,7 +186,7 @@ function parseExcel(buffer) {
     const instructionUse = String(row[7] ?? "").trim();
 
     if (!districtCode || !TARGET_GRADES.has(grade)) continue;
-    if (instructionUse !== "Core") continue;
+    if (instructionUse !== "Core" && instructionUse !== "Supplemental") continue;
     if (!rawProduct) continue;
 
     if (!districts.has(districtCode)) {
@@ -193,10 +194,18 @@ function parseExcel(buffer) {
         districtName,
         gradeProductMap: new Map(),
         foundationalProductMap: new Map(),
+        supplementalProductMap: new Map(),
       });
     }
     const entry = districts.get(districtCode);
-    const map = isFoundational ? entry.foundationalProductMap : entry.gradeProductMap;
+    let map;
+    if (instructionUse === "Supplemental") {
+      map = entry.supplementalProductMap;
+    } else if (isFoundational) {
+      map = entry.foundationalProductMap;
+    } else {
+      map = entry.gradeProductMap;
+    }
     if (!map.has(grade)) map.set(grade, new Set());
 
     // Some cells contain multiple products separated by newlines
@@ -246,18 +255,28 @@ async function importData() {
   let imported = 0;
   let updated = 0;
 
-  for (const [code, { districtName, gradeProductMap, foundationalProductMap }] of districts) {
+  for (const [
+    code,
+    { districtName, gradeProductMap, foundationalProductMap, supplementalProductMap },
+  ] of districts) {
     const curricula = [
       ...buildCurricula(gradeProductMap),
       ...buildCurricula(foundationalProductMap).map((c) => ({
         ...c,
         foundationalSkillsReported: true,
       })),
+      ...buildCurricula(supplementalProductMap).map((c) => ({
+        ...c,
+        supplementalReported: true,
+      })),
     ];
     const existingId = existingDocIds.get(code);
 
     if (existingId) {
-      await updateDoc(doc(db, "schools", existingId), { elaCurricula: curricula });
+      await updateDoc(doc(db, "schools", existingId), {
+        elaCurricula: curricula,
+        schoolYear: SCHOOL_YEAR,
+      });
       console.log(`  updated: ${districtName} (${code}) — ${curricula.length} curriculum entries`);
       updated++;
     } else {
@@ -269,6 +288,7 @@ async function importData() {
         schoolId: null,
         schoolName: null,
         elaCurricula: curricula,
+        schoolYear: SCHOOL_YEAR,
         source: "ma-dese-curriculum-report",
         sourceUrl: BASE_URL,
         sourceOrganization: "Massachusetts DESE",

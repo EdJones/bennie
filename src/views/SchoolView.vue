@@ -46,6 +46,7 @@ const coreCurricula = computed(() =>
 const foundationalCurricula = computed(() =>
   (school.value?.elaCurricula ?? []).filter(
     (e) =>
+      !e?.supplementalReported &&
       e?.reportedMaterialType !== "Reading Intervention" &&
       (e?.foundationalSkillsReported ||
         getProgramForProduct(e?.product?.trim() ?? "")?.categoryName === "Foundational / Phonics"),
@@ -58,13 +59,25 @@ const interventionCurricula = computed(() =>
   ),
 );
 
+const supplementalCurricula = computed(() =>
+  (school.value?.elaCurricula ?? []).filter((e) => e?.supplementalReported),
+);
+
 const legacyInterventionProducts = computed(() => school.value?.interventionProducts ?? []);
+
+// For MA districts with data but no dedicated foundational-skills reporting, show a note in that section.
+const showFoundationalSection = computed(() => {
+  if (foundationalCurricula.value.length) return true;
+  if (school.value?.state !== "MA") return false;
+  return coreCurricula.value.length > 0 || supplementalCurricula.value.length > 0;
+});
 
 const hasMultipleCurriculumSections = computed(() => {
   let count = 0;
   if (coreCurricula.value.length) count++;
-  if (foundationalCurricula.value.length) count++;
+  if (showFoundationalSection.value) count++;
   if (interventionCurricula.value.length || legacyInterventionProducts.value.length) count++;
+  if (supplementalCurricula.value.length) count++;
   return count >= 2;
 });
 
@@ -100,7 +113,8 @@ function formatBoolean(value) {
             !coreCurricula.length &&
             !foundationalCurricula.length &&
             !interventionCurricula.length &&
-            !legacyInterventionProducts.length
+            !legacyInterventionProducts.length &&
+            !supplementalCurricula.length
           "
           class="empty-state"
         >
@@ -125,9 +139,9 @@ function formatBoolean(value) {
             </div>
           </template>
 
-          <template v-if="foundationalCurricula.length">
+          <template v-if="showFoundationalSection">
             <h3 class="curriculum-section-heading">Foundational / Phonics</h3>
-            <div class="curriculum-entries">
+            <div v-if="foundationalCurricula.length" class="curriculum-entries">
               <div
                 v-for="(entry, i) in foundationalCurricula"
                 :key="'found-' + i"
@@ -143,6 +157,10 @@ function formatBoolean(value) {
                 </div>
               </div>
             </div>
+            <p v-else class="data-note">
+              {{ school.districtName || school.schoolName }} did not report a foundational skills
+              curriculum for {{ school.schoolYear }}.
+            </p>
           </template>
 
           <p
@@ -184,6 +202,26 @@ function formatBoolean(value) {
                 class="curriculum-entry"
               >
                 <div class="curriculum-name">{{ p }}</div>
+              </div>
+            </div>
+          </template>
+
+          <template v-if="supplementalCurricula.length">
+            <h3 class="curriculum-section-heading">Supplemental</h3>
+            <div class="curriculum-entries">
+              <div
+                v-for="(entry, i) in supplementalCurricula"
+                :key="'supp-' + i"
+                class="curriculum-entry"
+              >
+                <div class="curriculum-name">{{ entry.product || entry.provider || "—" }}</div>
+                <div v-if="entry.product && entry.provider" class="curriculum-byline">
+                  {{ entry.provider }}
+                </div>
+                <div class="chip-group">
+                  <span v-if="entry.gradeRange" class="chip chip-meta">{{ entry.gradeRange }}</span>
+                  <span v-if="entry.year" class="chip chip-meta">{{ entry.year }}</span>
+                </div>
               </div>
             </div>
           </template>

@@ -75,6 +75,7 @@ function getCoreCurricula(school) {
     const product = entry?.product?.trim();
     if (!product) continue;
     if (entry?.reportedMaterialType === "Reading Intervention") continue;
+    if (entry?.foundationalSkillsReported || entry?.supplementalReported) continue;
     const match = getProgramForProduct(product);
     if (match && CORE_CATEGORIES.has(match.categoryName) && !seen.has(match.programName)) {
       seen.add(match.programName);
@@ -91,6 +92,14 @@ function getFoundationalCurricula(school) {
     const product = entry?.product?.trim();
     if (!product) continue;
     if (entry?.reportedMaterialType === "Reading Intervention") continue;
+    if (entry?.supplementalReported) continue;
+    if (entry?.foundationalSkillsReported) {
+      if (!seen.has(product)) {
+        seen.add(product);
+        results.push(product);
+      }
+      continue;
+    }
     const match = getProgramForProduct(product);
     if (match && match.categoryName === "Foundational / Phonics" && !seen.has(match.programName)) {
       seen.add(match.programName);
@@ -452,6 +461,14 @@ onUnmounted(() => {
           available for this tab.
         </p>
 
+        <p
+          v-if="selectedState === 'MA' && activeTab === 'core'"
+          class="table-footnote table-footnote--top"
+        >
+          † Did not explicitly report a foundational skills curriculum. Some MA districts may have
+          reported as "Supplemental".
+        </p>
+
         <table
           v-if="selectedState || selectedCurriculum || selectedIntervention"
           class="schools-table"
@@ -484,6 +501,11 @@ onUnmounted(() => {
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
                 {{ getFoundationalCurricula(school).join(", ") }}
+                <span
+                  v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                  class="footnote-marker"
+                  >†</span
+                >
               </td>
               <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
@@ -520,6 +542,11 @@ onUnmounted(() => {
               </td>
               <td v-if="activeTab === 'core'" class="curriculum-cell foundational-cell">
                 {{ getFoundationalCurricula(school).join(", ") }}
+                <span
+                  v-if="school.state === 'MA' && !getFoundationalCurricula(school).length"
+                  class="footnote-marker"
+                  >†</span
+                >
               </td>
               <td v-if="activeTab === 'intervention'" class="interventions-cell">
                 <span
@@ -536,6 +563,11 @@ onUnmounted(() => {
             </tr>
           </tbody>
         </table>
+
+        <p v-if="selectedState === 'MA' && activeTab === 'core'" class="table-footnote">
+          † Did not explicitly report a foundational skills curriculum. Some MA districts may have
+          reported as "Supplemental".
+        </p>
       </template>
     </div>
   </div>
@@ -876,6 +908,23 @@ h1 {
 .search-count {
   font-size: 0.8rem;
   color: #aaa;
+}
+
+.footnote-marker {
+  color: #aaa;
+  font-size: 0.85em;
+  margin-left: 0.1em;
+}
+
+.table-footnote {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
+}
+
+.table-footnote--top {
+  margin: 0 0 0.5rem;
 }
 
 .state-intervention-note {
