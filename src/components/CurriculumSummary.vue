@@ -158,18 +158,21 @@ const tableData = computed(() => {
 });
 
 const unmatchedProducts = computed(() => {
-  const counts = {};
+  const schoolSets = {};
   for (const school of props.schools) {
     for (const entry of school.elaCurricula ?? []) {
       if (entry?.foundationalSkillsReported) continue;
       if (entry?.supplementalReported) continue;
       const product = entry?.product?.trim();
       if (product && !getProgramForProduct(product)) {
-        counts[product] = (counts[product] ?? 0) + 1;
+        if (!schoolSets[product]) schoolSets[product] = new Set();
+        schoolSets[product].add(school.id);
       }
     }
   }
-  return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return Object.entries(schoolSets)
+    .map(([product, s]) => [product, s.size])
+    .sort((a, b) => b[1] - a[1]);
 });
 
 const noDataByProvider = computed(() => {
