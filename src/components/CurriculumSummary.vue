@@ -4,6 +4,7 @@ import {
   curriculumCategories,
   interventionCategory,
   homegrownCategory,
+  noDataCategory,
   getProgramForProduct,
 } from "../data/curriculumCategories";
 import { STATE_NAMES } from "../data/stateNames";
@@ -53,6 +54,14 @@ const UPPER_ELEMENTARY_GROUPS = [
   },
 ];
 
+function isUpperElementaryGrade(g) {
+  const n = g
+    .trim()
+    .toLowerCase()
+    .replace(/^grades?\s*/, "");
+  return n === "6" || n === "5-6";
+}
+
 const tableData = computed(() => {
   const schoolList = props.schools;
   const total = schoolList.length;
@@ -60,6 +69,7 @@ const tableData = computed(() => {
   const programSchools = {};
   const interventionProgramSchools = {};
   const homegrownSchools = new Set();
+  const upperElementarySchools = new Set();
   const noDataSchools = new Set();
 
   for (const school of schoolList) {
@@ -83,6 +93,10 @@ const tableData = computed(() => {
           programSchools[key].add(school.id);
         } else {
           hasUnmatched = true;
+          const gr = entry?.gradeRange?.trim();
+          if (gr && isUpperElementaryGrade(gr)) {
+            upperElementarySchools.add(school.id);
+          }
         }
       }
 
@@ -138,30 +152,42 @@ const tableData = computed(() => {
   }
 
   const homegrownCount = homegrownSchools.size;
+  const upperElementaryCount = upperElementarySchools.size;
   const noDataCount = noDataSchools.size;
-  const homegrownTotal = homegrownCount + noDataCount;
   coreRows.push({
     isFirstInCategory: true,
     categoryRowspan: 2,
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
     categoryTextColor: homegrownCategory.textColor,
-    catTotal: homegrownTotal,
-    programName: "Supplemental Bundle",
+    catTotal: homegrownCount,
+    programName: "Additional",
     count: homegrownCount,
     shareOfAdoptions: pct(homegrownCount, total),
-    categoryShare: pct(homegrownTotal, total),
+    categoryShare: pct(homegrownCount, total),
   });
   coreRows.push({
     isFirstInCategory: false,
     categoryName: homegrownCategory.name,
     categoryColor: homegrownCategory.color,
-    catTotal: homegrownTotal,
+    catTotal: homegrownCount,
+    programName: "Upper Elem. Classroom Curriculum",
+    count: upperElementaryCount,
+    shareOfAdoptions: pct(upperElementaryCount, total),
+    categoryShare: pct(homegrownCount, total),
+  });
+  coreRows.push({
+    isFirstInCategory: true,
+    categoryRowspan: 1,
+    categoryName: noDataCategory.name,
+    categoryColor: noDataCategory.color,
+    categoryTextColor: noDataCategory.textColor,
+    catTotal: noDataCount,
     programName: "No curriculum recorded",
     programNameMuted: true,
     count: noDataCount,
     shareOfAdoptions: pct(noDataCount, total),
-    categoryShare: pct(homegrownTotal, total),
+    categoryShare: pct(noDataCount, total),
   });
 
   const interventionEntries = Object.entries(interventionProgramSchools)
@@ -205,13 +231,6 @@ const unmatchedProducts = computed(() => {
         }
       }
     }
-  }
-  function isUpperElementaryGrade(g) {
-    const n = g
-      .trim()
-      .toLowerCase()
-      .replace(/^grades?\s*/, "");
-    return n === "6" || n === "5-6";
   }
   return Object.entries(schoolSets)
     .map(([product, s]) => {
@@ -550,7 +569,7 @@ const visibleRows = computed(() => {
     </p>
 
     <details v-if="activeTab === 'core' && hasHomegrownDetail" class="homegrown-detail">
-      <summary>What's in the Homegrown category?</summary>
+      <summary>What's in the 'Other' category?</summary>
 
       <div class="detail-sections">
         <div v-if="supplementalGrouped.length > 0" class="detail-section">

@@ -298,9 +298,15 @@ export const interventionCategory = {
 };
 
 export const homegrownCategory = {
-  name: "Homegrown",
+  name: "Other",
   color: "#fdecea",
   textColor: "#8b2020",
+};
+
+export const noDataCategory = {
+  name: "No Curriculum Recorded",
+  color: "#f0f0f0",
+  textColor: "#555",
 };
 
 function normalize(str) {
