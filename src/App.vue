@@ -119,4 +119,46 @@ main {
   min-height: calc(100vh - 140px);
   background-color: #f5f7fa;
 }
+
+@media (max-width: 640px) {
+  header {
+    padding: 0.75rem 1rem;
+  }
+
+  .header-content {
+    gap: 0.5rem;
+  }
+
+  .header-left {
+    gap: 0.75rem;
+  }
+
+  .logo {
+    height: 60px;
+    width: 60px;
+    border-radius: 8px;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+  }
+
+  .header-right {
+    gap: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .header-btn {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.55rem;
+  }
+
+  .user-email {
+    display: none;
+  }
+}
 </style>
