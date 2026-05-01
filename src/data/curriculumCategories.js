@@ -273,6 +273,7 @@ export const curriculumCategories = [
           "Ready Reading",
         ],
       },
+      { name: "Blast Foundations", products: ["Blast Foundations"] },
       { name: "Words Their Way", products: ["Words Their Way"] },
       { name: "Fast ForWord", products: ["Fast ForWord"] },
       { name: "Reading Recovery", products: ["Reading Recovery"] },
